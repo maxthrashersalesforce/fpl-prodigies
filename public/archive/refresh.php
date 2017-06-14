@@ -8,38 +8,51 @@ $url_teams = $url_fpl . 'teams/';
 $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
 
-$last_played_gameweek = 32;
-get_teams($url_teams);
-get_fixtures($url_fixtures);
-get_players($url_players);
+$last_played_gameweek = 37;
+// get_teams($url_teams);
+// get_fixtures($url_fixtures);
+// get_players($url_players);
 
 $league_id = 270578;
+$league_id = 2637;
+$league_id = 6211;
 get_league_standings($league_id, $last_played_gameweek);
 
 function get_league_standings($league_id, $last_played_gameweek) {
-    $page = 1;
-    $full_standings = get_fpl_response('https://fantasy.premierleague.com/drf/' . 'leagues-classic-standings/' . $league_id . '?phase=1&le-page=1&ls-page=' . $page);
-    $standings = $full_standings['standings']['results'];
 
     $db = New db();
     $query = $db -> query('delete from standings where league_id = ' . $league_id . ';');
-    foreach ($standings as $entry) {
-        $query = $db -> query('insert into standings (league_id, player_id, entry_name, total, rank, last_rank) values ('
-            . $league_id
-            . ',' . $entry['entry']
-            . ',"' . $entry['entry_name']
-            . '",' . $entry['total']
-            . ',' . $entry['rank']
-            . ',' . $entry['last_rank']
-            . ');'
-        );
-    }
-    
-    $rows = $db -> select('select player_id from standings where league_id = ' . $league_id . ';');
-    foreach ($rows as $row) {
-        for ($gameweek = 1; $gameweek <= $last_played_gameweek; ++$gameweek) {
-            $url_entry = 'https://fantasy.premierleague.com/drf/entry/'. $row['player_id'] .'/event/'.$gameweek.'/picks';
-            get_entries($url_entry, $row['player_id'], $gameweek);
+    $last_page = 1;
+
+    for ($page = 1; $page <= $last_page; $page++) {
+        $full_standings = get_fpl_response('https://fantasy.premierleague.com/drf/' . 'leagues-classic-standings/' . $league_id . '?phase=1&le-page=1&ls-page=' . $page);
+
+        if ($full_standings) {
+            $standings = $full_standings['standings']['results'];
+
+            foreach ($standings as $entry) {
+                $sql = 'insert into standings (league_id, player_id, entry_name, total, rank, last_rank, player_name 
+                    ) values ('
+                    . $league_id
+                    . ',' . $entry['entry']
+                    . ',"' . $entry['entry_name']
+                    . '",' . $entry['total']
+                    . ',' . $entry['rank']
+                    . ',' . $entry['last_rank']
+                    . ',"' . $entry['player_name']
+                    . '");';
+                $query = $db -> query($sql);
+            }
+            
+            $rows = $db -> select('select player_id from standings where league_id = ' . $league_id . ';');
+            foreach ($rows as $row) {
+                for ($gameweek = 1; $gameweek <= $last_played_gameweek; ++$gameweek) {
+                    $url_entry = 'https://fantasy.premierleague.com/drf/entry/'. $row['player_id'] .'/event/'.$gameweek.'/picks';
+                    get_entries($url_entry, $row['player_id'], $gameweek);
+                }
+            }
+        } else {
+            $page = $last_page;
         }
     }
 }
@@ -47,7 +60,12 @@ function get_league_standings($league_id, $last_played_gameweek) {
 function get_fpl_response($url) {
     $response = file_get_contents($url);
     $json = json_decode($response, true);
-    return $json;
+
+    if (!$json) {
+        return $json;
+    } else {
+        return $json;
+    }
 }
 
 function get_teams($url) {
@@ -92,7 +110,7 @@ function get_players($url) {
     $players = $full_players['elements'];
 
     $db = New db();
-    // $query = $db -> query('truncate table players;');
+    $query = $db -> query('truncate table players;');
 
     foreach ($players as $player) {
         $query = $db -> query(
@@ -113,16 +131,17 @@ function get_entries($url, $player_id, $gameweek) {
     $full_entries = get_fpl_response($url);
     $entry = $full_entries['entry_history'];
     $db = New db();
-    // $query = $db -> query('truncate table entries;');
+   // $query = $db -> query('truncate table entries;');
 
     $sql = 
-        'insert into entries (id, player_id, gameweek, points, value, bank) values ('
+        'insert into entries (id, player_id, gameweek, points, value, bank, total_points) values ('
         . $entry['id']
         . ',' . $player_id
         . ',' . $gameweek
         . ',' . $entry['points']
         . ',' . $entry['value']
         . ',' . $entry['bank'] 
+        . ',' . $entry['total_points'] 
         . ');';
     $query = $db -> query($sql);
     echo $sql . '<br>';

@@ -36,7 +36,6 @@ class db {
     public function query($query) {
         $conn = $this -> connect();
         $r = $conn -> query($query);
-        //echo $query . '<br>';
         return $r;
     }
 

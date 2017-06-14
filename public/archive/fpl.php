@@ -19,16 +19,10 @@ $url_players = "bootstrap-static";
     $pw = "root";
     $db = 'fpl';
     $port = null;
-} elseif (gethostname() == 'aws') {
-    $server = "aap18lpm7xe6ss.cauxglmclxtj.us-east-1.rds.amazonaws.com";
-        $user = "root";
-        $pw = "rootroot";
-        $db = 'ebdb';
-        $port = '3306';
-} else {    
+} else {
     $server = "127.0.0.1";
     $user = "root";
-    $pw = "Thysk9315";
+    $pw = "*";
     $db = 'fpl';
     $port = '3306';
 }
@@ -238,6 +232,9 @@ function get_winners($league_id, $page) {
                 if ($pts > $week_winner_pts && $u_name != "Mid Table or Bust") {
                     $week_winner_pts = $pts;
                     $week_winner_name = $u_name;
+                } else if ($pts = $week_winner_pts && $u_name != "Mid Table or Bust") {
+                    $week_winner_pts = $pts;
+                    $week_winner_name = $u_name . ' + ' . $week_winner_name;
                 }
             }
             $body .= '<tr>';
