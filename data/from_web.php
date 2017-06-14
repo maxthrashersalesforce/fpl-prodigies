@@ -1,22 +1,31 @@
 <?php
 
-require_once('db.php');
-
 $url_fpl = "https://fantasy.premierleague.com/drf/";
 $url_standings = "leagues-classic-standings/";
 $url_teams = $url_fpl . 'teams/';
 $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
 
-$last_played_gameweek = 37;
-// get_teams($url_teams);
-// get_fixtures($url_fixtures);
-// get_players($url_players);
-
+$last_played_gameweek = 38;
 $league_id = 270578;
 $league_id = 2637;
 $league_id = 6211;
-get_league_standings($league_id, $last_played_gameweek);
+
+// get_teams($url_teams);
+// get_fixtures($url_fixtures);
+// get_players($url_players);
+// get_league_standings($league_id, $last_played_gameweek);
+
+function get_fpl_response($url) {
+    $response = file_get_contents($url);
+    $json = json_decode($response, true);
+
+    if (!$json) {
+        return $json;
+    } else {
+        return $json;
+    }
+}
 
 function get_league_standings($league_id, $last_played_gameweek) {
 
@@ -54,17 +63,6 @@ function get_league_standings($league_id, $last_played_gameweek) {
         } else {
             $page = $last_page;
         }
-    }
-}
-
-function get_fpl_response($url) {
-    $response = file_get_contents($url);
-    $json = json_decode($response, true);
-
-    if (!$json) {
-        return $json;
-    } else {
-        return $json;
     }
 }
 
@@ -139,12 +137,57 @@ function get_entries($url, $player_id, $gameweek) {
         . ',' . $player_id
         . ',' . $gameweek
         . ',' . $entry['points']
-        . ',' . $entry['value']
+        . ' 
+        ,' . $entry['value']
         . ',' . $entry['bank'] 
         . ',' . $entry['total_points'] 
         . ');';
     $query = $db -> query($sql);
     echo $sql . '<br>';
+}
+
+function get_winners($league_id, $page) {
+    global $url_fpl, $url_standings, $url_players, $last_played_gameweek;
+    $body = '';
+
+    $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
+    $array = json_decode($json_response, true);
+    $json_standings = $array['standings']['results'];
+
+    if ($json_standings == false) {
+        return null;
+    } else {
+
+        for ($gameweek = 1; $gameweek <= $last_played_gameweek; ++$gameweek) {
+            $week_winner_name = '';
+            $week_winner_pts = 0;
+            $week_winner_total = 0;
+
+            foreach ($json_standings as $entry) {
+                $resp = file_get_contents($url_fpl . "entry/" . $entry['entry'] . "/event/" . $gameweek . "/picks");
+                $arr = json_decode($resp, true);
+                $map_user_name[$entry['entry']] = $entry['entry_name'];
+
+                $all_entries = $arr['entry_history'];
+                $pts = $all_entries['points'];
+                $u_name = $map_user_name[$entry['entry']];
+
+                if ($pts > $week_winner_pts && $u_name != "Mid Table or Bust") {
+                    $week_winner_pts = $pts;
+                    $week_winner_name = $u_name;
+                } else if ($pts = $week_winner_pts && $u_name != "Mid Table or Bust") {
+                    $week_winner_pts = $pts;
+                    $week_winner_name = $u_name . ' + ' . $week_winner_name;
+                }
+            }
+            $body .= '<tr>';
+            $body .= '<td>' . $gameweek . '</td>';
+            $body .= '<td>' . $week_winner_name . '</td>';
+            $body .= '<td>' . $week_winner_pts . '</td>';
+            $body .= '</tr>';
+        }
+    }
+    return $body;
 }
 
 ?>
