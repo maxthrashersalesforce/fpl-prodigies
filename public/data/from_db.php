@@ -1,4 +1,102 @@
 <?php
+error_reporting(0);
+require_once(__DIR__ . '/../db/db.php');
+$success = 0;
+$mode = isset($_POST['mode']) ?: '';
+
+switch ($mode) {
+    case 'teamsheets':
+        $team_id = $_POST['team_id'] ?: 10;
+        $body = get_teamsheets($team_id);
+        if ($body) {
+            $success = 1;
+        }
+        break;
+    case 'fixtures':
+        $shown_gameweeks = $_POST['gameweeks'] ?: 3;
+
+        $tbl = fixtures_table($shown_gameweeks);
+        if ($tbl) {
+            $success = 1;
+        }
+        break;
+
+}
+
+$arr = array(
+    'SUCCESS' => $success
+    ,'TABLE' => $tbl
+    ,'BODY' => $body
+    ,'gw' => $shown_gameweeks
+);
+
+echo $resp = json_encode($arr);
+
+
+
+function get_teamsheets($team_id) {
+    $sql = 'select p.web_name, ps.left, ps.top, p.code, cast((now_cost / 10) as decimal(3,1)) now_cost
+            from players p 
+            join teams t on p.team = t.id
+            join teamsheets ts on ts.id = p.id
+            join positions ps on ps.position = ts.position
+            where t.id = '.$team_id.';';
+    $db = New db;
+    $rows = $db->select($sql);
+    $body = '';
+
+    foreach ($rows as $player) {
+        $top = ($player['top'] * .65) ?: 0;
+        $left = ($player['left'] * .65) ?: 0;
+
+        $body .= '<div class="player" style="top: '.$top.'px; left: '.$left.'px;">';
+        $body .= '<img class="player-image" src="http://platform-static-files.s3.amazonaws.com/premierleague/photos/players/110x140/p'.$player['code'].'.png"/>';
+        $body .= '<div class="player-label">'.$player['web_name'].' (£'.$player['now_cost'].')</div>';
+        $body .= '</div>';
+    }
+    return $body;
+}
+
+function fixtures_table($shown_gameweeks) {
+    $CURRENT_GW = 2;
+    $db = New db;
+    $rows = $db->select(getsql());
+
+    $strength = get_strength();
+
+    $body = '<table id="fixtures" class="table table-striped table-condensed"><thead><tr><th>Team</th><th>Overall</th>';
+    for ($i = $CURRENT_GW; $i <= ($CURRENT_GW + $shown_gameweeks - 1); $i++) {
+        $body .= '<th>GW ' . $i . '</th>';
+    }
+    $body .= '</tr></thead><tbody>';
+
+    foreach ($rows as $row) {
+        $overall = 0;
+        $bodyTemp = '';
+        $body .= '<tr>';
+        $body .= '<td>' . $row['name'] . '</td>';
+        for ($i = $CURRENT_GW; $i <= ($CURRENT_GW + $shown_gameweeks - 1); $i++) {
+            if (substr($row['gw' . $i], -2, 1) == 'H') {
+                $at = 'home';
+            } else {
+                $at = 'away';
+            }
+            $team = substr($row['gw' . $i], 0, -4);
+            $bodyTemp .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw' . $i], $strength[$team][$at], $at) . '</p></td>';
+            $overall += $strength[$team][$at];
+        }
+        // echo $overall .' / ' . $gw . ', ';
+        $ovr = round(($overall / $shown_gameweeks), 0);
+        $body .= '<td>' . format($ovr, $ovr) . '</td>';
+        $body .= $bodyTemp;
+
+        $body .= '</tr>';
+    }
+    $body .= '</tbody></table>';
+
+    return $body;
+}
+
 
 function standings_table($league_id) {
     $db = New db;
@@ -67,25 +165,64 @@ function power_table($league_id, $current_gameweek) {
 
 function players_table() {
     $db = New db;
-    $rows = $db -> select('select id, name, team, goals_scored, assists, clean_sheets, goals_conceded, bps from players');
-    
+    $rows = $db -> select(
+        'select p.web_name, t.name, cast((now_cost / 10) as decimal(3,1)) now_cost,
+  cast(((total_points - 2) / (now_cost / 10)) as decimal(5,3)) vapm,
+ goals_scored, assists, clean_sheets, bps, element_type, total_points
+ ,ft.gw2,ft.gw3,ft.gw4
+            from players p 
+            join teams t on p.team = t.id
+            join fixture_table ft on ft.`name` = t.name');
+//            where element_type in ('. $positions .')');
+
+    $positions = [1 => 'GK', 2 => 'DEF', 3=>'MID', 4=>'FWD'];
+    $strength = get_strength();
+
     $body = '<thead>
                 <tr>
                     <th>Player</th>
+                    <th>Team</th>
+                    <th>Cost</th>
+                    <th>Points</th>
+                    <th>VAPM</th>
                     <th>Goals</th>
                     <th>Assists</th>
-                    <th>Clean Sheets</th>
+                    <th>CS</th>
                     <th>BPS</th>
+                    <th>Position</th>
+                    <th>GW 2</th>
+                    <th>GW 3</th>
                 </tr>
             </thead>
             <tbody>';
+
     foreach ($rows as $row) {
         $body .= '<tr>';
+        $body .= '<td>' . $row['web_name'] . '</td>';
         $body .= '<td>' . $row['name'] . '</td>';
+        $body .= '<td><p style=" min-width: 50px; height: 0px;">£ ' . $row['now_cost'] . '</p></td>';
+        $body .= '<td>' . $row['total_points'] . '</td>';
+        $body .= '<td>' . $row['vapm'] . '</td>';
         $body .= '<td>' . $row['goals_scored'] . '</td>';
         $body .= '<td>' . $row['assists'] . '</td>';
         $body .= '<td>' . $row['clean_sheets'] . '</td>';
         $body .= '<td>' . $row['bps'] . '</td>';
+        $body .= '<td>' . $positions[$row['element_type']] . '</td>';
+        if (substr($row['gw2'], -2, 1) == 'H') {
+            $at = 'home';
+        } else {
+            $at = 'away';
+        }
+        $team = substr($row['gw2'], 0, -4);
+        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw2'], $strength[$team][$at]) . '</p></td>';
+        if (substr($row['gw3'], -2, 1) == 'H') {
+            $at = 'home';
+        } else {
+            $at = 'away';
+        }
+        $team = substr($row['gw3'], 0, -4);
+        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw3'], $strength[$team][$at]) . '</p></td>';
+        //$body .= '<td>' . $row['gw4'] . '</td>';
         $body .= '</tr>';
     }
     $body .= '</tbody>';
@@ -94,4 +231,44 @@ function players_table() {
 }
 
 
-?>
+
+function format($value, $strength, $at = 'home') {
+    if ($strength > 1150) {
+        if ($at == 'home') {
+            $color = 'red';
+        } else {
+            $color = 'darkred';
+        }
+    } elseif ($strength <= 1150 and $strength >= 1090) {
+        $color = 'orange';
+    } else {
+        if ($at == 'away') {
+            $color = 'green';
+        } else {
+            $color = 'lightgreen';
+        }
+    }
+
+    return sprintf('<span style="color: %s;">%s</span>', $color, $value);
+}
+
+function getsql() {
+    return
+    "select * from fixture_table";
+}
+
+function get_strength () {
+    $sql = "select name, strength_overall_home, strength_overall_away from teams";
+    $db = New db;
+    $arr = array();
+    $inner_arr = array();
+    $str = $db -> select($sql);
+    for ($i = 0; $i <= 19; $i++) {
+        $inner_arr['home'] = $str[$i]['strength_overall_home'];
+        $inner_arr['away'] = $str[$i]['strength_overall_away'];
+        $arr[$str[$i]['name']] = $inner_arr;
+    }
+
+    return $arr;
+
+}

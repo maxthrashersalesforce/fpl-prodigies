@@ -6,20 +6,12 @@ class db {
 
     public function connect() {
        // global $url_fpl, $url_standings, $url_players, $server, $user, $pw, $db, $port;
-
-        if (gethostname() == 'scotchbox') {
-            $server = "localhost";
-            $user = "root";
-            $pw = "root";
-            $db = 'fpl';
-            $port = null;
-        } else {
-            $server = "127.0.0.1";
-            $user = "root";
-            $pw = "*";
-            $db = 'fpl';
-            $port = '3306';
-        }
+        $configs = require_once('cred.php');
+        $server = $configs['server'];
+        $user = $configs['user'];
+        $pw = $configs['pw'];
+        $db = $configs['db'];
+        $port = $configs['port'];
 
         if(!isset(self::$conn)) {
             self::$conn = new mysqli($server, $user, $pw, $db, $port);
@@ -49,6 +41,11 @@ class db {
             $rows[] = $row;
         }
         return $rows;
+    }
+
+    public function error() {
+        $conn = $this->connect();
+        return $conn->error;
     }
 }
 

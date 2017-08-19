@@ -8,7 +8,7 @@ $url_teams = $url_fpl . 'teams/';
 $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
 
-$last_played_gameweek = 38;
+$last_played_gameweek = 1;
 $league_id = 270578;
 // $league_id = 2637;
 // $league_id = 6211;
@@ -17,7 +17,6 @@ get_teams($url_teams);
 get_fixtures($url_fixtures);
 get_players($url_players);
 // get_league_standings($league_id, $last_played_gameweek);
-
 
 // $rows = get_winners($league_id, 1);
 // echo '<table>'.$rows.'</table>';
@@ -46,8 +45,9 @@ function get_league_standings($league_id, $last_played_gameweek) {
         if ($full_standings) {
             $standings = $full_standings['standings']['results'];
 
+            $sql = '';
             foreach ($standings as $entry) {
-                $sql = 'insert into standings (league_id, player_id, entry_name, total, rank, last_rank, player_name 
+                $sql .= 'insert into standings (league_id, player_id, entry_name, total, rank, last_rank, player_name 
                     ) values ('
                     . $league_id
                     . ',' . $entry['entry']
@@ -56,10 +56,11 @@ function get_league_standings($league_id, $last_played_gameweek) {
                     . ',' . $entry['rank']
                     . ',' . $entry['last_rank']
                     . ',"' . $entry['player_name']
-                    . '");';
-                $query = $db -> query($sql);
+                    . '"); ';
+
             }
-            
+            $db -> query($sql);
+
             $rows = $db -> select('select player_id from standings where league_id = ' . $league_id . ';');
             foreach ($rows as $row) {
                 for ($gameweek = 1; $gameweek <= $last_played_gameweek; ++$gameweek) {
@@ -78,12 +79,69 @@ function get_teams($url) {
     $teams = get_fpl_response($url);
 
     $db = New db();
-    $query = $db -> query('truncate table teams;');
+    $db -> query('truncate table teams;');
 
     foreach ($teams as $team) {
-        $query = $db -> query('insert into teams (id, name) values (' . $team['id'] . ',"' . $team['name'] . '" )');
+        try {
+            $sql = 'insert into teams (id,
+            name,
+            code,
+            short_name,
+            unavailable,
+            strength,
+            position,
+            played,
+            win,
+            loss,
+            draw,
+            points,
+            
+            link_url,
+            strength_overall_home,
+            strength_overall_away,
+            strength_attack_home,
+            strength_attack_away,
+            strength_defence_home,
+            strength_defence_away,
+            team_division) values (' .
+                '"' . $team['id'] . '",' .
+                '"' . $team['name'] . '",' .
+                '"' . $team['code'] . '",' .
+                '"' . $team['short_name'] . '",' .
+                '"' . $team['unavailable'] . '",' .
+                '"' . $team['strength'] . '",' .
+                '"' . $team['position'] . '",' .
+                '"' . $team['played'] . '",' .
+                '"' . $team['win'] . '",' .
+                '"' . $team['loss'] . '",' .
+                '"' . $team['draw'] . '",' .
+                '"' . $team['points'] . '",' .
+              //  '"' . $team['form'] . '",' .
+                '"' . $team['link_url'] . '",' .
+                '"' . $team['strength_overall_home'] . '",' .
+                '"' . $team['strength_overall_away'] . '",' .
+                '"' . $team['strength_attack_home'] . '",' .
+                '"' . $team['strength_attack_away'] . '",' .
+                '"' . $team['strength_defence_home'] . '",' .
+                '"' . $team['strength_defence_away'] . '",' .
+                '"' . $team['team_division'] . '")';
+
+            echo $sql . '<br>';
+            $res = $db->query($sql);
+            if (!$res) {
+                echo 'exception: ' . $db->error() , '<br>';
+            }
+        } catch (Exception $e) {
+            echo 'exception: ' . $e;
+        }
     }
-    echo 'teams refreshed.';
+    if (true) {
+        echo 'teams refreshed.';
+        echo $res;
+    } else {
+        echo $res;
+    }
+
 }
 
 function get_fixtures($url) {
@@ -94,13 +152,13 @@ function get_fixtures($url) {
     $query = $db -> query($sql);
 
     foreach ($fixtures as $fixture) {
-        if ($fixture['team_h_score']) {
+        if (true) {
             $sql = 'insert into fixtures (id, h_id, h_score, a_id, a_score, gameweek) values ('
                     . $fixture['id'] 
-                    . ',' . $fixture['team_h'] 
-                    . ',' . $fixture['team_h_score'] 
-                    . ',' . $fixture['team_a'] 
-                    . ',' . $fixture['team_a_score'] 
+                    . ',' . $fixture['team_h']
+                    . ',' . ($fixture['team_h_score'] ? 0 : 0)
+                    . ',' . $fixture['team_a']
+                    . ',' . ($fixture['team_a_score'] ? 0 : 0)
                     . ',' . $fixture['event']
                     . ');';
                     echo $sql;
@@ -119,7 +177,8 @@ function get_players($url) {
 
     foreach ($players as $player) {
         $query = $db -> query(
-            'insert into players (id, name, team, goals_scored, assists, clean_sheets, goals_conceded, bps) values ('
+            'insert into players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
+              code) values ('
             . $player['id']
             . ',"' . $player['web_name']
             . '",' . $player['team']
@@ -128,6 +187,10 @@ function get_players($url) {
             . ',' . $player['clean_sheets']
             . ',' . $player['goals_conceded']
             . ',' . $player['bps']
+            . ',' . $player['now_cost']
+            . ',' . $player['element_type']
+            . ',' . $player['total_points']
+            . ',' . $player['code']
             . ');');
     }
 }
