@@ -75,7 +75,7 @@ function get_teamsheets($team_id, $screen_height) {
 }
 
 function fixtures_table($shown_gameweeks) {
-    $CURRENT_GW = 5;
+    $CURRENT_GW = 6;
     $db = New db;
     $rows = $db->select(getsql());
 
@@ -181,7 +181,7 @@ function power_table($league_id, $current_gameweek) {
 }
 
 function players_table() {
-    $CURRENT_GW = 5;
+    $CURRENT_GW = 6;
     $db = New db;
     $rows = $db -> select(
         'select p.web_name, t.name, cast((now_cost / 10) as decimal(3,1)) now_cost,
