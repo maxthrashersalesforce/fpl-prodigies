@@ -156,9 +156,9 @@ function get_fixtures($url) {
             $sql = 'insert into fixtures (id, h_id, h_score, a_id, a_score, gameweek) values ('
                     . $fixture['id'] 
                     . ',' . $fixture['team_h']
-                    . ',' . ($fixture['team_h_score'] ? 0 : 0)
+                    . ',' . ($fixture['team_h_score'] ?: 0)
                     . ',' . $fixture['team_a']
-                    . ',' . ($fixture['team_a_score'] ? 0 : 0)
+                    . ',' . ($fixture['team_a_score'] ?: 0)
                     . ',' . $fixture['event']
                     . ');';
                     echo $sql;
@@ -178,7 +178,7 @@ function get_players($url) {
     foreach ($players as $player) {
         $query = $db -> query(
             'insert into players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
-              code) values ('
+              code, minutes) values ('
             . $player['id']
             . ',"' . $player['web_name']
             . '",' . $player['team']
@@ -191,6 +191,7 @@ function get_players($url) {
             . ',' . $player['element_type']
             . ',' . $player['total_points']
             . ',' . $player['code']
+            . ',' . $player['minutes']
             . ');');
     }
 }

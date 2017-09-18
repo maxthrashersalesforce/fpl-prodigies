@@ -24,8 +24,21 @@
 	/*margin: 0 0 0 10px;*/
 }
 
+.player-label-pc {
+	width: 150px;
+	text-align: center;
+	font-size: 12px;
+	/*margin: 0 0 0 10px;*/
+}
+
 .player {
 	width: 120px;
+	text-align: center;
+	position: absolute;
+}
+
+.player-pc {
+	width: 150px;
 	text-align: center;
 	position: absolute;
 }
@@ -33,6 +46,19 @@
 .player-image {
 	width: 50%;
 	text-align: center;
+}
+
+.player-image-pc {
+	width: 70%;
+	text-align: center;
+}
+
+.team-select {
+	text-align: center;
+	position: absolute;
+	top: 0px;
+	left: 150px;
+
 }
 
 

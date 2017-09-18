@@ -14,7 +14,7 @@
                 <option value="3">3</option>
                 <option selected value="5">5</option>
                 <option value="10">10</option>
-                <option value="37">37</option>
+                <option value="35">35</option>
             </select>
         </div>
     </div>

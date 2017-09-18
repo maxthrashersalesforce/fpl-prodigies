@@ -2,15 +2,25 @@
 error_reporting(0);
 require_once(__DIR__ . '/../db/db.php');
 $success = 0;
-$mode = isset($_POST['mode']) ?: '';
+$arr = array();
+$mode = $_POST['mode'] ?: '';
 
 switch ($mode) {
     case 'teamsheets':
         $team_id = $_POST['team_id'] ?: 10;
-        $body = get_teamsheets($team_id);
-        if ($body) {
+        $screen_height = $_POST['screen_height'];
+        $body = get_teamsheets($team_id, $screen_height);
+        $options = get_teams_select($team_id);
+
+        if ($body and $options) {
             $success = 1;
         }
+
+        $arr = array(
+            'SUCCESS' => $success
+            ,'BODY' => $body
+            ,'OPTIONS' => $options
+        );
         break;
     case 'fixtures':
         $shown_gameweeks = $_POST['gameweeks'] ?: 3;
@@ -19,23 +29,21 @@ switch ($mode) {
         if ($tbl) {
             $success = 1;
         }
-        break;
 
+        $arr = array(
+            'SUCCESS' => $success
+            ,'TABLE' => $tbl
+            ,'gw' => $shown_gameweeks
+        );
+        break;
 }
 
-$arr = array(
-    'SUCCESS' => $success
-    ,'TABLE' => $tbl
-    ,'BODY' => $body
-    ,'gw' => $shown_gameweeks
-);
-
-echo $resp = json_encode($arr);
+echo (sizeof($arr) > 0 ) ? json_encode($arr) : '';
 
 
 
-function get_teamsheets($team_id) {
-    $sql = 'select p.web_name, ps.left, ps.top, p.code, cast((now_cost / 10) as decimal(3,1)) now_cost
+function get_teamsheets($team_id, $screen_height) {
+    $sql = 'select p.web_name, ps.left, ps.top, p.code, cast((now_cost / 10) as decimal(3,1)) now_cost, cast(((p.total_points / p.minutes) * 90) as decimal(5,1)) projection
             from players p 
             join teams t on p.team = t.id
             join teamsheets ts on ts.id = p.id
@@ -46,19 +54,28 @@ function get_teamsheets($team_id) {
     $body = '';
 
     foreach ($rows as $player) {
-        $top = ($player['top'] * .65) ?: 0;
-        $left = ($player['left'] * .65) ?: 0;
+        $top = ($player['top'] * .72) ?: 0;
+        $left = ($player['left'] * .55) ?: 0;
 
-        $body .= '<div class="player" style="top: '.$top.'px; left: '.$left.'px;">';
-        $body .= '<img class="player-image" src="http://platform-static-files.s3.amazonaws.com/premierleague/photos/players/110x140/p'.$player['code'].'.png"/>';
-        $body .= '<div class="player-label">'.$player['web_name'].' (£'.$player['now_cost'].')</div>';
+        if ($screen_height > 800) {
+            $top = $top + ($top * 0.25);
+            $left = $left * 1.5;
+            $pc = '-pc';
+        } else {
+            $pc = '';
+        }
+
+        $body .= '<div class="player'.$pc.'" style="top: '.$top.'px; left: '.$left.'px;">';
+        $body .= '<img class="player-image'.$pc.'" src="http://platform-static-files.s3.amazonaws.com/premierleague/photos/players/110x140/p'.$player['code'].'.png"/>';
+        // $body .= '<div class="player-label">'.$player['web_name'].' (£'.$player['now_cost'].')</div>';
+        $body .= '<div class="player-label'.$pc.'">'.$player['web_name'].' ('.$player['projection'].')</div>';
         $body .= '</div>';
     }
     return $body;
 }
 
 function fixtures_table($shown_gameweeks) {
-    $CURRENT_GW = 2;
+    $CURRENT_GW = 5;
     $db = New db;
     $rows = $db->select(getsql());
 
@@ -164,12 +181,13 @@ function power_table($league_id, $current_gameweek) {
 }
 
 function players_table() {
+    $CURRENT_GW = 5;
     $db = New db;
     $rows = $db -> select(
         'select p.web_name, t.name, cast((now_cost / 10) as decimal(3,1)) now_cost,
   cast(((total_points - 2) / (now_cost / 10)) as decimal(5,3)) vapm,
- goals_scored, assists, clean_sheets, bps, element_type, total_points
- ,ft.gw2,ft.gw3,ft.gw4
+ goals_scored, assists, clean_sheets, bps, element_type, total_points, minutes
+ ,ft.gw'.$CURRENT_GW.',ft.gw'.($CURRENT_GW+1).'
             from players p 
             join teams t on p.team = t.id
             join fixture_table ft on ft.`name` = t.name');
@@ -189,9 +207,10 @@ function players_table() {
                     <th>Assists</th>
                     <th>CS</th>
                     <th>BPS</th>
+                    <th>Mins</th>
                     <th>Position</th>
-                    <th>GW 2</th>
-                    <th>GW 3</th>
+                    <th>GW '.$CURRENT_GW.'</th>
+                    <th>GW '.($CURRENT_GW + 1).'</th>
                 </tr>
             </thead>
             <tbody>';
@@ -207,22 +226,22 @@ function players_table() {
         $body .= '<td>' . $row['assists'] . '</td>';
         $body .= '<td>' . $row['clean_sheets'] . '</td>';
         $body .= '<td>' . $row['bps'] . '</td>';
+        $body .= '<td>' . $row['minutes'] . '</td>';
         $body .= '<td>' . $positions[$row['element_type']] . '</td>';
-        if (substr($row['gw2'], -2, 1) == 'H') {
+        if (substr($row['gw'.$CURRENT_GW], -2, 1) == 'H') {
             $at = 'home';
         } else {
             $at = 'away';
         }
-        $team = substr($row['gw2'], 0, -4);
-        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw2'], $strength[$team][$at]) . '</p></td>';
-        if (substr($row['gw3'], -2, 1) == 'H') {
+        $team = substr($row['gw'.$CURRENT_GW], 0, -4);
+        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw'.$CURRENT_GW], $strength[$team][$at], $at) . '</p></td>';
+        if (substr($row['gw'.($CURRENT_GW + 1)], -2, 1) == 'H') {
             $at = 'home';
         } else {
             $at = 'away';
         }
-        $team = substr($row['gw3'], 0, -4);
-        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw3'], $strength[$team][$at]) . '</p></td>';
-        //$body .= '<td>' . $row['gw4'] . '</td>';
+        $team = substr($row['gw'.($CURRENT_GW + 1)], 0, -4);
+        $body .= '<td><p style=" min-width: 130px; height: 0px;">' . format($row['gw'.($CURRENT_GW+1)], $strength[$team][$at], $at) . '</p></td>';
         $body .= '</tr>';
     }
     $body .= '</tbody>';
@@ -271,4 +290,16 @@ function get_strength () {
 
     return $arr;
 
+}
+
+function get_teams_select ($team_id) {
+    $sql = "select name, id from teams";
+    $db = New db;
+    $res = $db -> select($sql);
+    $options = '';
+    foreach($res as $team) {
+        $selected = ($team_id == $team['id']) ? 'selected' : '';
+        $options .= '<option value="'.$team['id'].'" '.$selected.' >'.$team['name'].'</option>';
+    }
+    return $options;
 }
