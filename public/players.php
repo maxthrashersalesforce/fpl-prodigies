@@ -6,7 +6,6 @@
 
 <div class="container-fluid" style="margin-top: 60px;">
 <!--    <div class="col-sm-2 col-xs-12" id="filters">-->
-<!--        <input id="search" class="search form-control" placeholder="Search...">-->
 <!--        <ul class="filters">-->
 <!--            <li>-->
 <!--                <input id="1" type="checkbox" class="position-checkbox" checked/>-->
@@ -20,7 +19,7 @@
 <!--                <input id="3" type="checkbox" class="position-checkbox" checked/>-->
 <!--                <label>MID</label>-->
 <!--            </li>-->
-
+<!---->
 <!--            <li>-->
 <!--                <input id="4" type="checkbox" class="position-checkbox" checked/>-->
 <!--                <label>FWD</label>-->
@@ -30,6 +29,16 @@
     <div class="row" style="padding: 0 0 5px 0;">
         <div class="col-xs-12">
             <input id="search" class="search form-control" placeholder="Search..." style="">
+        </div>
+        <div class="col-xs-12">
+            <input id="1" type="checkbox" class="position-checkbox" checked/>
+            <label>GK</label>
+            <input id="2" type="checkbox" class="position-checkbox" checked/>
+            <label>DEF</label>
+            <input id="3" type="checkbox" class="position-checkbox" checked/>
+            <label>MID</label>
+            <input id="4" type="checkbox" class="position-checkbox" checked/>
+            <label>FWD</label>
         </div>
     </div>
     <div class="row">
@@ -60,15 +69,15 @@
             table.search( this.value ).draw();
         } );
 
-//        $('.position-checkbox').change(function() {
-//            if(this.checked) {
-//                var $rowsNo = $('#players tbody tr').filter(function () {
-//                    return $.trim($(this).find('td').eq(7).text()) === "GK"
-//                }).toggle();
-//            } else {
-//                // $('#players').html(<?// echo players_table("2,3,4"); ?>//)
-//            }
-//        });
+        $('.position-checkbox').change(function() {
+            if(this.checked) {
+                var $rowsNo = $('#players tbody tr').filter(function () {
+                    return $.trim($(this).find('td').eq(7).text()) === "GK"
+                }).toggle();
+            } else {
+                // $('#players').html(<? echo players_table("2,3,4"); ?>)
+            }
+        });
     });
 
 

@@ -12,6 +12,11 @@
     require_once("db/db.php");
     require_once("data/from_db.php");
     ?>
+
+    <script>
+        window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(r?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(a,n);for(var o=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","removeEventProperty","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=o(p[c])};
+        heap.load("3528340159");
+    </script>
 </head>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container navcontainer">
@@ -27,10 +32,11 @@
         <div id="navbar" class="collapse navbar-collapse navbar-right">
             <ul class="nav navbar-nav">
 <!--                <li><input id="search" class="search form-control" placeholder="Search..." style="background: transparent; border: none; margin-top: 8px;"></li>-->
-                <li><a href="./blog">Analysis</a></li>
-                <li><a href="./players">Players</a></li>
+<!--                <li><a href="./blog">Analysis</a></li>-->
+                <li><a href="./">Players</a></li>
                 <li><a href="./fixtures">Fixtures</a></li>
                 <li><a href="./teamsheets">Teamsheets</a></li>
+                <li><a href="./selections">Selections</a></li>
             </ul>
         </div>
     </div>

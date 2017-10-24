@@ -1,7 +1,7 @@
 <?php
 
 require_once($_SERVER['DOCUMENT_ROOT'].'/db/db.php');
-
+require_once($_SERVER['DOCUMENT_ROOT'].'/data/from_db.php');
 $url_fpl = "https://fantasy.premierleague.com/drf/";
 $url_standings = "leagues-classic-standings/";
 $url_teams = $url_fpl . 'teams/';
@@ -9,18 +9,16 @@ $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
 
 $last_played_gameweek = 1;
-$league_id = 270578;
+$league_id = 3281;
 // $league_id = 2637;
 // $league_id = 6211;
-
-get_teams($url_teams);
-get_fixtures($url_fixtures);
-get_players($url_players);
 // get_league_standings($league_id, $last_played_gameweek);
-
 // $rows = get_winners($league_id, 1);
 // echo '<table>'.$rows.'</table>';
 
+//get_teams($url_teams);
+//get_fixtures($url_fixtures);
+get_players($url_players);
 
 function get_fpl_response($url) {
     $response = file_get_contents($url);
@@ -178,7 +176,7 @@ function get_players($url) {
     foreach ($players as $player) {
         $query = $db -> query(
             'insert into players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
-              code, minutes) values ('
+              code, minutes, points_per_game, event_points) values ('
             . $player['id']
             . ',"' . $player['web_name']
             . '",' . $player['team']
@@ -192,6 +190,8 @@ function get_players($url) {
             . ',' . $player['total_points']
             . ',' . $player['code']
             . ',' . $player['minutes']
+            . ',' . $player['points_per_game']
+            . ',' . $player['event_points']
             . ');');
     }
 }
@@ -270,4 +270,13 @@ function my_team ($player_id) {
 
     return $table;
 }
+
+function get_whoscored () {
+    $json_response = 'https://www.whoscored.com/StatisticsFeed/1/GetPlayerStatistics?category=summary&subcategory=offensive&statsAccumulationType=0&isCurrent=true&playerId=&teamIds=&matchId=&stageId=15151&tournamentOptions=2&sortBy=Rating&sortAscending=&age=&ageComparisonType=&appearances=&appearancesComparisonType=&field=Overall&nationality=&positionOptions=&timeOfTheGameEnd=&timeOfTheGameStart=&isMinApp=true&page=&includeZeroValues=&numberOfPlayersToPick=10';
+    $array = json_decode($json_response, true);
+    $players = $array['playerTableStats'];
+}
+
+
+
 ?>
