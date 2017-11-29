@@ -8,38 +8,37 @@ require_once("header.php");
             <input id="search" class="search form-control" placeholder="Search...">
         </div>
         <div class="col-xs-4">
-            <input id="league" class="form-control" placeholder="League ID">
+            <input id="player_id" class="form-control" placeholder="Player ID">
         </div>
         <div class="col-xs-3">
-            <input id="get_selections" type="button" class="btn btn-primary" value="Get">
+            <input id="get_player" type="button" class="btn btn-primary" value="Get">
         </div>
     </div>
     <div class="row"></p></div>
-    <div class="col-xs-12 table-responsive" id="div_selections" ></div>
+    <div class="col-xs-12 table-responsive" id="div_player" ></div>
 </div>
 <script>
     $(document).ready(function() {
-        var league_id = gup('league', window.location.href);
-        get_selections(league_id)
+        var player_id = gup('player', window.location.href);
+        get_player(player_id);
     });
 
-    $('#get_selections').click(function() {
-        var league_id = $('#league').val();
-        get_selections(league_id);
+    $('#get_player').click(function() {
+        var player_id = $('#player_id').val();
+        get_player(player_id);
     });
 
-    function get_selections(league_id) {
-        var data = {league: league_id, mode: 'selections'};
-        var div = $('#div_selections');
-        div.html('<center><b>Loading your league selections... who\'s the genius with Xhaka?</b><br><br><img src="i/roll.gif" alt="ball"></center>');
+    function get_player(player_id) {
+        var data = {player: player_id, mode: 'weather'};
+        var div = $('#div_player');
+        div.html('<center><b>Loading the player\'s performance...</b><br><br><img src="i/roll.gif" alt="ball"></center>');
 
         $.post('data/from_db.php', data, function(resp) {
             var j = JSON.parse(resp);
             div.html(j.BODY);
-            $('[data-toggle="popover"]').popover();
 
-            var table = $('#selections').DataTable( {
-                "order": [[3, "desc"]]
+            var table = $('#player_table').DataTable( {
+                "order": [[1, "desc"]]
                 ,"paging": false
                 ,"info": false
                 ,"compact": true
@@ -50,17 +49,9 @@ require_once("header.php");
             $('#search').on( 'keyup', function () {
                 table.search( this.value ).draw();
             } );
+
         });
     }
-
-    $(document).on('click', function (e) {
-        $('[data-toggle="popover"],[data-original-title]').each(function () {
-            if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
-                (($(this).popover('hide').data('bs.popover')||{}).inState||{}).click = false  // fix for BS 3.3.6
-            }
-        });
-    });
-
 
     function gup( name, url ) {
         if (!url) url = location.href;
@@ -73,7 +64,7 @@ require_once("header.php");
 
     $("#league").keyup(function(event) {
         if (event.keyCode === 13) {
-            $("#get_selections").click();
+            $("#get_player").click();
             $(this).blur();
         }
     });

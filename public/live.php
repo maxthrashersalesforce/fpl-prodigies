@@ -11,35 +11,35 @@ require_once("header.php");
             <input id="league" class="form-control" placeholder="League ID">
         </div>
         <div class="col-xs-3">
-            <input id="get_selections" type="button" class="btn btn-primary" value="Get">
+            <input id="get_livetable" type="button" class="btn btn-primary" value="Get">
         </div>
     </div>
     <div class="row"></p></div>
-    <div class="col-xs-12 table-responsive" id="div_selections" ></div>
+    <div class="col-xs-12 table-responsive" id="div_live_table" ></div>
 </div>
 <script>
     $(document).ready(function() {
         var league_id = gup('league', window.location.href);
-        get_selections(league_id)
+        get_live_table(league_id);
     });
 
-    $('#get_selections').click(function() {
+    $('#get_livetable').click(function() {
         var league_id = $('#league').val();
-        get_selections(league_id);
+        get_live_table(league_id);
     });
 
-    function get_selections(league_id) {
-        var data = {league: league_id, mode: 'selections'};
-        var div = $('#div_selections');
-        div.html('<center><b>Loading your league selections... who\'s the genius with Xhaka?</b><br><br><img src="i/roll.gif" alt="ball"></center>');
+    function get_live_table(league_id) {
+        var data = {league: league_id, mode: 'test'};
+        var div = $('#div_live_table');
+        div.html('<center><b>Loading your live table... looks like you are still in last place.</b><br><br><img src="i/roll.gif" alt="ball"></center>');
 
         $.post('data/from_db.php', data, function(resp) {
             var j = JSON.parse(resp);
             div.html(j.BODY);
             $('[data-toggle="popover"]').popover();
 
-            var table = $('#selections').DataTable( {
-                "order": [[3, "desc"]]
+            var table = $('#live_table').DataTable( {
+                "order": [[7, "desc"]]
                 ,"paging": false
                 ,"info": false
                 ,"compact": true
@@ -50,6 +50,7 @@ require_once("header.php");
             $('#search').on( 'keyup', function () {
                 table.search( this.value ).draw();
             } );
+
         });
     }
 
@@ -73,7 +74,7 @@ require_once("header.php");
 
     $("#league").keyup(function(event) {
         if (event.keyCode === 13) {
-            $("#get_selections").click();
+            $("#get_livetable").click();
             $(this).blur();
         }
     });

@@ -14,7 +14,7 @@
                 <option value="3">3</option>
                 <option selected value="5">5</option>
                 <option value="10">10</option>
-                <option value="29">29</option>
+                <option value="25">25</option>
             </select>
         </div>
     </div>
@@ -56,6 +56,7 @@
     $('#gameweeks').change(function() {
         var gw = this.value;
         var data = {gameweeks: gw, mode: 'fixtures'};
+        heap.track('gameweeks_selected', {'gameweeks_selected' : gw});
 
         $.post('data/from_db.php', data, function(resp) {
             var j = JSON.parse(resp);

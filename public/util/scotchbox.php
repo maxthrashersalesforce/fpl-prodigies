@@ -24,7 +24,7 @@
             </div>
             <div id="power" class="tab-pane fade">
                 <table id="power" class="table table-striped">
-                    <?php echo power_table(270578, 27); ?>
+                    <?php echo power_table(270578); ?>
                 </table>
             </div>
             <div id="player" class="tab-pane fade in active">

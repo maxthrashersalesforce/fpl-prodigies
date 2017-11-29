@@ -22,7 +22,7 @@ require_once("header.php");
     </div>
     <div class="row">
         <div class="col-xs-12 table-responsive" id="player">
-            <table id="players" class="table table-striped"></table>
+            <table id="players" class="table table-striped table-sm"></table>
         </div>
     </div>
 </div>

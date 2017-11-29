@@ -28,6 +28,9 @@ class db {
     public function query($query) {
         $conn = $this -> connect();
         $r = $conn -> query($query);
+        if (!$r) {
+            return $conn -> error;
+        }
         return $r;
     }
 
@@ -37,16 +40,24 @@ class db {
         if($r === false) {
             return false;
         }
-        while ($row = $r -> fetch_assoc()) {
-            $rows[] = $row;
+        if ($r->num_rows > 0) {
+            while ($row = $r -> fetch_assoc()) {
+                $rows[] = $row;
+            }
+            return $rows;
+        } else {
+            error_log('no results');
+            error_log($query);
+            return false;
         }
-        return $rows;
     }
 
     public function error() {
         $conn = $this->connect();
         return $conn->error;
     }
-}
 
-?>
+    public function close() {
+        mysqli_close(self::$conn);
+    }
+}

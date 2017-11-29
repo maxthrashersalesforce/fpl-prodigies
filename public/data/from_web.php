@@ -1,14 +1,16 @@
 <?php
 
-require_once($_SERVER['DOCUMENT_ROOT'].'/db/db.php');
-require_once($_SERVER['DOCUMENT_ROOT'].'/data/from_db.php');
+require_once(__DIR__ . '/../db/db.php');
+require_once(__DIR__ . '/../common.php');
+// require_once(__DIR__ . '/../data/from_db.php');
 $url_fpl = "https://fantasy.premierleague.com/drf/";
 $url_standings = "leagues-classic-standings/";
 $url_teams = $url_fpl . 'teams/';
 $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
+$url_players_detail = $url_fpl . 'element-summary/';
 
-$last_played_gameweek = 1;
+$last_played_gameweek = 12;
 $league_id = 3281;
 // $league_id = 2637;
 // $league_id = 6211;
@@ -16,9 +18,13 @@ $league_id = 3281;
 // $rows = get_winners($league_id, 1);
 // echo '<table>'.$rows.'</table>';
 
-//get_teams($url_teams);
-//get_fixtures($url_fixtures);
-get_players($url_players);
+// get_players($url_players);
+// get_teams($url_teams);
+// create($url_fixtures);
+
+get_fixtures_($url_fixtures);
+get_players_($url_players);
+// get_players_detail($url_players_detail);
 
 function get_fpl_response($url) {
     $response = file_get_contents($url);
@@ -166,6 +172,39 @@ function get_fixtures($url) {
     echo 'results refreshed.';
 }
 
+function get_fixtures_($url) {
+    $fixtures = get_fpl_response($url);
+    $db = New db();
+    foreach ($fixtures as $fixture) {
+        $insert = 'insert into fixtures (';
+        foreach ($fixture as $key => $value) {
+            if ($key != 'stats') {
+                $insert .= $key . ',';
+            }
+        }
+        $insert = rtrim($insert,',');
+        $insert .= ') values (';
+        $update = 'ON DUPLICATE KEY UPDATE ';
+        foreach ($fixture as $key => $value) {
+            if ($key != 'stats') {
+                $value = ($value == '') ? 0 : $value;
+                $insert .= "'" . $value . "',";
+                $update .= $key . '=' . "'" . $value . "',";
+            }
+        }
+        $insert = rtrim($insert,',');
+        $update = rtrim($update,',');
+        $insert .= ') '.$update.'; ';
+
+        $r = $db->query($insert);
+        if ($r != 1) {
+            error_log($r);
+            error_log($insert);
+        };
+    }
+    echo 'fixtures refreshed.';
+}
+
 function get_players($url) {
     $full_players = get_fpl_response($url);
     $players = $full_players['elements'];
@@ -176,7 +215,7 @@ function get_players($url) {
     foreach ($players as $player) {
         $query = $db -> query(
             'insert into players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
-              code, minutes, points_per_game, event_points) values ('
+              code, minutes, points_per_game, event_points, selected_by_percent) values ('
             . $player['id']
             . ',"' . $player['web_name']
             . '",' . $player['team']
@@ -192,8 +231,71 @@ function get_players($url) {
             . ',' . $player['minutes']
             . ',' . $player['points_per_game']
             . ',' . $player['event_points']
+            . ',' . $player['selected_by_percent']
             . ');');
     }
+    $db->close();
+    echo 'players refreshed.';
+}
+
+function get_players_($url) {
+    $full_players = get_fpl_response($url);
+    $players = $full_players['elements'];
+
+    $db = New db();
+
+    foreach ($players as $player) {
+        $insert = 'insert into players (';
+        foreach ($player as $key => $value) {
+            $insert .= $key.',';
+        }
+        $insert = rtrim($insert,',');
+        $insert .= ') values (';
+        $update = 'ON DUPLICATE KEY UPDATE ';
+        foreach ($player as $key => $value) {
+            $value = ($value == '') ? 0 : $value;
+            $value = str_replace("'", "''", $value);
+            $insert .= "'" . $value. "',";
+            $update .= $key.'='."'" . $value. "',";
+        }
+        $insert = rtrim($insert,',');
+        $update = rtrim($update,',');
+        $insert .= ') '.$update.'; ';
+
+        $r = $db->query($insert);
+        if ($r != 1) {
+            error_log($r);
+            error_log($insert);
+        };
+    }
+    $db->close();
+    error_log('players refreshed.');
+}
+
+function get_players_detail($url) {
+    $db = New db();
+    // $db -> query('truncate table players_detail;');
+
+    for ($i = 1; $i <= 560; $i++) { // 560
+        $full_players = get_fpl_response($url.$i);
+        $matches = $full_players['history'];
+        foreach ($matches as $match) {
+            $insert = 'insert into players_detail (';
+            foreach ($match as $key => $value) {
+                $insert .= $key.',';
+            }
+            $insert = rtrim($insert,',');
+            $insert .= ') values (';
+            foreach ($match as $key => $value) {
+                $value = ($value == '') ? 0 : $value;
+                $insert .= "'" . $value. "',";
+            }
+            $insert = rtrim($insert,',');
+            $insert .= '); ';
+            $db->query($insert);
+        }
+    }
+    $db->close();
 }
 
 function get_entries($url, $player_id, $gameweek) {
@@ -212,12 +314,12 @@ function get_entries($url, $player_id, $gameweek) {
         . ',' . $entry['bank'] 
         . ',' . $entry['total_points'] 
         . ');';
-    $query = $db -> query($sql);
+    $db -> query($sql);
     echo $sql . '<br>';
 }
 
 function get_winners($league_id, $page) {
-    global $url_fpl, $url_standings, $url_players, $last_played_gameweek;
+    global $url_fpl, $url_standings, $last_played_gameweek;
     $body = '';
 
     $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
@@ -267,7 +369,6 @@ function get_winners($league_id, $page) {
 
 function my_team ($player_id) {
     $table = '';
-
     return $table;
 }
 
@@ -277,6 +378,19 @@ function get_whoscored () {
     $players = $array['playerTableStats'];
 }
 
+function create($url) {
+    $fixtures = get_fpl_response($url);
+    $fixture = $fixtures[0];
+    $insert = 'create table fixtures (';
+    foreach ($fixture as $key => $value) {
+        if ($key != 'stats') {
+            $insert .= $key . ' int(11),<br>';
+        }
+    }
+    $insert = rtrim($insert,',');
+    $insert .= ') ; ';
 
+    echo $insert;
+}
 
 ?>
