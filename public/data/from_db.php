@@ -90,7 +90,7 @@ switch ($mode) {
         );
         break;
     case 'weather':
-        $player = $_POST['player'] ?: 12;
+        $player = $_POST['player'] ?: 255;
         $body = get_weather($player);
         $success = 1;
         $arr = array(
@@ -224,7 +224,7 @@ function get_league_picks_($league_id) {
         $array = json_decode($json_response, true);
         $json_standings = $array['standings']['results'];
         if (count($json_standings) > 0) {
-            return get_league_picks_api($json_standings);
+            return get_league_picks_api_($json_standings);
         } else {
             return 'Error retrieving league ID!';
         }
@@ -305,6 +305,7 @@ function get_league_picks_api_($json_standings) {
             $json_standings[$i]['transfer_cost'] = $entry_obj->transfer_cost;
             $json_standings[$i]['team_value'] = $entry_obj->team_value;
             $json_standings[$i]['calc_cost'] = $entry_obj->calc_cost;
+
             $i++;
         };
     }
@@ -319,7 +320,7 @@ function get_league_picks_api_($json_standings) {
     $table .= th('Pts', 'Player points for this gameweek.');
     $table .= th('Bench', 'Total bench points for this gameweek.');
     $table .= th('Cost', 'Cost of the transfers made this gameweek.');
-    $table .= th('Live Total', 'Live Total Points');
+    $table .= th('Live Total', 'Live Total Points (Live Rank)');
     $table .= th('Prev Total', 'Previous Week Total Points');
     $table .= th('Team Value', 'Team Value + Money in the Bank');
 
@@ -358,10 +359,10 @@ function get_league_picks_api_($json_standings) {
         $table .= '<td data-order="'.$user['user_bench_points'].'"><a class="bench" title="<b>Bench Points</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$bench_table.'" >'.$user['user_bench_points'].'</a></td>';
         $table .= td(($user['transfer_cost'] == 0) ? $user['transfer_cost'] : '-'.$user['transfer_cost']);
         if ($user['calc_cost']) {
-            $table .= td($user['new_total'] - $user['transfer_cost']);
+            $table .= td(($user['new_total'] - $user['transfer_cost']) . ' ('.$i.')');
             $table .= td($user['new_total'] - $user['user_points']);
         } else {
-            $table .= td($user['new_total']);
+            $table .= td($user['new_total'] . ' ('.$i.')');
             $table .= td($user['new_total'] - $user['user_points'] + $user['transfer_cost']);
         }
         $table .= td($user['team_value']);

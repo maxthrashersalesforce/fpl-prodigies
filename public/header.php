@@ -35,18 +35,18 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" id="home" href="https://fantasy.premierleague.com/" target="_blank">FNTSY PL</a>
+            <a class="navbar-brand" id="home" href="./">FNTSY PL</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse navbar-right">
             <ul class="nav navbar-nav">
 <!--                <li><input id="search" class="search form-control" placeholder="Search..." style="background: transparent; border: none; margin-top: 8px;"></li>-->
 <!--                <li><a href="./blog">Analysis</a></li>-->
-                <li><a href="./">Players</a></li>
-                <li><a href="./fixtures">Fixtures</a></li>
-                <li><a href="./teamsheets">Teamsheets</a></li>
-                <li><a href="./selections">Selections</a></li>
                 <li><a href="./live">Live Table</a></li>
+                <li><a href="./selections">Selections</a></li>
+                <li><a href="./players">Players</a></li>
+                <li><a href="./fixtures">Fixtures</a></li>
                 <li><a href="./my">My Team</a></li>
+                <li><a href="./teamsheets">Teamsheets</a></li>
             </ul>
         </div>
     </div>

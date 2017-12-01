@@ -38,6 +38,13 @@
 	color: black;
 }
 
+.btn-primary:hover {
+	background-color: #38003C;
+	background-image: none;
+	border-color: #38003C;
+	color: white;
+}
+
 #filter {
 	border: black;
 }
