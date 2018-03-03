@@ -27,6 +27,7 @@ require_once("header.php");
     <div class="row">
         <div class="col-xs-12">
             <h3>Feedback / Requests</h3>
+            <p>Submit feed back below or get in touch with us on Twitter <a href="https://twitter.com/FNTSYPL">@FNTSYPL</a>.</p>
             <textarea class="form-control" id="feedback" rows="3"></textarea>
             <br>
             <input id="btn_feedback" type="button" class="btn btn-primary" value="Submit">
@@ -36,6 +37,13 @@ require_once("header.php");
         <div class="col-xs-12">
             <h3>Change Log</h3>
             <ul>
+                <li><b>DEC.25.2017</b> : Bench Boost is now included in live total. Bug found by <a href="http://fmlfpl.com/" target="_blank">FML FPL</a>!</li>
+                <li><b>DEC.23.2017</b> : Live Totals cleaned up. Bug found by <a href="https://www.reddit.com/user/Trustme_I_lie" target="_blank">/u/Trustme_I_lie</a> and <a href="https://www.reddit.com/user/Oggiva" target="_blank">/u/Oggiva</a>!</li>
+                <li><b>DEC.12.2017</b> : Changed Transfer Cost to show # of Transfers instead. Request by Uncle Brian!</li>
+                <li><b>DEC.12.2017</b> : Resolved Live Points sorting issues. Bug found by <a href="https://www.reddit.com/user/NorwegianHammerworks" target="_blank">/u/NorwegianHammerworks</a>!</li>
+                <li><b>DEC.08.2017</b> : Added Captain to Live table. Request by <a href="https://www.reddit.com/user/Arcanium_TT" target="_blank">/u/Arcanium_TT</a> and <a href="https://www.reddit.com/user/beskaj" target="_blank">/u/beskaj</a>!</li>
+                <li><b>DEC.02.2017</b> : Added Transfers to Live table. Does not work on mobile yet.</li>
+                <li><b>DEC.02.2017</b> : Added Live Bonus to Live table. Request by <a href="https://www.reddit.com/user/xangto" target="_blank">/u/xangto</a>!</li>
                 <li><b>DEC.01.2017</b> : Added Live Rank to Live table next to Live Points. Request by <a href="https://www.reddit.com/user/millssyyy" target="_blank">/u/millssyyy</a>!</li>
                 <li><b>NOV.25.2017</b> : Added My Team BETA. Request by <a href="https://www.reddit.com/user/theequaliser72" target="_blank">/u/theequaliser72</a>!</li>
             </ul>

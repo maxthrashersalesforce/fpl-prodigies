@@ -60,13 +60,18 @@ require_once("header.php");
         div3.html();
         div4.html();
 
-        $.post('data/from_db.php', data, function(resp) {
-            var j = JSON.parse(resp);
-            div.html(j.BODY[0]);
-            div2.html(j.BODY[1]);
-            div3.html(j.BODY[2]);
-            div4.html(j.BODY[3]);
-        });
+        if (team === '00000') {
+            div.html('Enter your Team ID above to get selections!');
+        } else {
+            $.post('data/from_db.php', data, function(resp) {
+                var j = JSON.parse(resp);
+                div.html(j.BODY[0]);
+                div2.html(j.BODY[1]);
+                div3.html(j.BODY[2]);
+                div4.html(j.BODY[3]);
+                $('#team').val(j.TEAM);
+            });
+        }
     }
 
     function gup( name, url ) {

@@ -47,6 +47,7 @@
                 <li><a href="./fixtures">Fixtures</a></li>
                 <li><a href="./my">My Team</a></li>
                 <li><a href="./teamsheets">Teamsheets</a></li>
+                <li><a href="./">Help</a></li>
             </ul>
         </div>
     </div>

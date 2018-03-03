@@ -31,11 +31,13 @@ require_once("header.php");
     function get_selections(league_id) {
         var data = {league: league_id, mode: 'selections'};
         var div = $('#div_selections');
+        $('.popover').hide();
         div.html('<center><b>Loading your league selections... who\'s the genius with Xhaka?</b><br><br><img src="i/roll.gif" alt="ball"></center>');
 
         $.post('data/from_db.php', data, function(resp) {
             var j = JSON.parse(resp);
             div.html(j.BODY);
+            $('#league').val(j.LEAGUE);
             $('[data-toggle="popover"]').popover();
 
             var table = $('#selections').DataTable( {

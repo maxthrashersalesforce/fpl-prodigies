@@ -26,16 +26,7 @@ get_fixtures_($url_fixtures);
 get_players_($url_players);
 // get_players_detail($url_players_detail);
 
-function get_fpl_response($url) {
-    $response = file_get_contents($url);
-    $json = json_decode($response, true);
 
-    if (!$json) {
-        return $json;
-    } else {
-        return $json;
-    }
-}
 
 function get_league_standings($league_id, $last_played_gameweek) {
 
@@ -175,35 +166,100 @@ function get_fixtures($url) {
 function get_fixtures_($url) {
     $fixtures = get_fpl_response($url);
     $db = New db();
-    foreach ($fixtures as $fixture) {
-        $insert = 'insert into fixtures (';
-        foreach ($fixture as $key => $value) {
-            if ($key != 'stats') {
-                $insert .= $key . ',';
-            }
-        }
-        $insert = rtrim($insert,',');
-        $insert .= ') values (';
-        $update = 'ON DUPLICATE KEY UPDATE ';
-        foreach ($fixture as $key => $value) {
-            if ($key != 'stats') {
-                $value = ($value == '') ? 0 : $value;
-                $insert .= "'" . $value . "',";
-                $update .= $key . '=' . "'" . $value . "',";
-            }
-        }
-        $insert = rtrim($insert,',');
-        $update = rtrim($update,',');
-        $insert .= ') '.$update.'; ';
+    $i = 0;
 
-        $r = $db->query($insert);
-        if ($r != 1) {
-            error_log($r);
-            error_log($insert);
-        };
+    $sql = 'update players_detail set bonus = 0 where round = '.CURRENT_GW.' and bonus != 0;';
+    $db->query($sql);
+
+    foreach ($fixtures as $fixture) {
+        if ($fixture['event'] == CURRENT_GW) {
+            $insert = 'insert into fixtures (';
+            foreach ($fixture as $key => $value) {
+                if ($key != 'stats') {
+                    $insert .= $key . ',';
+                }
+            }
+            $insert = rtrim($insert, ',');
+            $insert .= ') values (';
+            $update = 'ON DUPLICATE KEY UPDATE ';
+            foreach ($fixture as $key => $value) {
+                if ($key != 'stats') {
+                    $value = ($value == '') ? 0 : $value;
+                    $insert .= "'" . $value . "',";
+                    $update .= $key . '=' . "'" . $value . "',";
+                }
+            }
+            $insert = rtrim($insert, ',');
+            $update = rtrim($update, ',');
+            $insert .= ') ' . $update . '; ';
+
+            $r = $db->query($insert);
+            if ($r != 1) {
+                error_log($r);
+                error_log($insert);
+            } else {
+                $i++;
+            };
+
+            // update bonus
+            if (count($fixture['stats']) > 0 ) {
+                $away = $fixture['stats'][9]['bps']['a'];
+                $home = $fixture['stats'][9]['bps']['h'];
+
+                $bonus = array();
+
+                for ($j = 0; $j < 4; $j++) {
+                    $bonus[] = $away[$j];
+                    $bonus[] = $home[$j];
+                }
+                $bonus = array_order($bonus, 'value', SORT_DESC);
+
+                if ($bonus[0]['value'] > $bonus[1]['value']) {
+                    bonus($db, $bonus[0]['element'], 3);
+                    if ($bonus[1]['value'] > $bonus[2]['value']) {
+                        bonus($db, $bonus[1]['element'], 2);
+                        bonus($db, $bonus[2]['element'], 1);
+                    } else {
+                        bonus($db, $bonus[1]['element'], 2);
+                        bonus($db, $bonus[2]['element'], 2);
+                    }
+                } else {
+                    bonus($db, $bonus[0]['element'], 3);
+                    bonus($db, $bonus[1]['element'], 3);
+                    if ($bonus[2]['value'] > $bonus[3]['value']) {
+                        bonus($db, $bonus[2]['element'], 1);
+                    } else {
+                        bonus($db, $bonus[2]['element'], 1);
+                        bonus($db, $bonus[3]['element'], 1);
+                    }
+                }
+            }
+        }
     }
-    echo 'fixtures refreshed.';
+    echo $i . ' fixtures refreshed.';
 }
+
+function bonus($db, $element, $bonus) {
+    $sql = 'update players_detail set bonus = '.$bonus.' where round = '.CURRENT_GW.' and element = '.$element.';';
+    $db->query($sql);
+}
+//
+//function array_order()
+//{
+//    $args = func_get_args();
+//    $data = array_shift($args);
+//    foreach ($args as $n => $field) {
+//        if (is_string($field)) {
+//            $tmp = array();
+//            foreach ($data as $key => $row)
+//                $tmp[$key] = $row[$field];
+//            $args[$n] = $tmp;
+//        }
+//    }
+//    $args[] = &$data;
+//    call_user_func_array('array_multisort', $args);
+//    return array_pop($args);
+//}
 
 function get_players($url) {
     $full_players = get_fpl_response($url);
@@ -234,7 +290,7 @@ function get_players($url) {
             . ',' . $player['selected_by_percent']
             . ');');
     }
-    $db->close();
+    // $db->close();
     echo 'players refreshed.';
 }
 
@@ -268,7 +324,7 @@ function get_players_($url) {
             error_log($insert);
         };
     }
-    $db->close();
+    // $db->close();
     error_log('players refreshed.');
 }
 

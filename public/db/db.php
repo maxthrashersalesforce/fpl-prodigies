@@ -18,15 +18,19 @@ class db {
         }
 
         if(self::$conn === false) {
-            echo 'error on connection.';
+            error_log('error on connection.');
             return false;
         }
         return self::$conn;
-
     }
 
-    public function query($query) {
+    public function query($query, $parms = null) {
         $conn = $this -> connect();
+        // prepare
+        if ($parms != null) {
+           //  $stmt = $conn -> prepare($query);
+           //  $stmt -> bind_param()
+        }
         $r = $conn -> query($query);
         if (!$r) {
             return $conn -> error;
@@ -34,9 +38,9 @@ class db {
         return $r;
     }
 
-    public function select($query) {
+    public function select($query, $parms = null) {
         $rows = array();
-        $r = $this -> query($query);
+        $r = $this -> query($query, $parms);
         if($r === false) {
             return false;
         }

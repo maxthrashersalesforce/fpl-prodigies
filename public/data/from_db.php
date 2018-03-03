@@ -4,6 +4,7 @@ require_once(__DIR__ . '/../db/db.php');
 require_once(__DIR__ . '/../classes/entry.php');
 require_once(__DIR__ . '/../common.php');
 require_once(__DIR__ . '/../weath/weather.php');
+// require_once(__DIR__ . '/../justoffside.php');
 
 $url_fpl = "https://fantasy.premierleague.com/drf/";
 $url_standings = "leagues-classic-standings/";
@@ -13,7 +14,9 @@ $url_fixtures = $url_fpl . 'fixtures/';
 $url_players = $url_fpl . 'bootstrap-static';
 $success = 0;
 $arr = array();
-$mode = $_POST['mode'] ?: '';
+$mode = isset($_POST['mode']) ? $_POST['mode'] : '';
+$s_entry = isset($_SESSION['entry']) ? $_SESSION['entry'] : null;
+$s_league = isset($_SESSION['league']) ? $_SESSION['league'] : null;
 
 switch ($mode) {
     case 'teamsheets':
@@ -55,38 +58,69 @@ switch ($mode) {
         );
         break;
     case 'selections':
-        $league = $_POST['league'] ?: 313; // 3281;
+        $league = $_POST['league'] ?: ($s_league ?: 313); // 3281;
         if ($league == '00000') {
             $body = 'Enter your League ID above to get selections!';
         } else {
+            $_SESSION['league'] = $league;
             $body = get_league_picks($league);
         }
         $success = 1;
         $arr = array(
             'SUCCESS' => $success
             ,'BODY' => $body
+            ,'LEAGUE' => $league
         );
         break;
     case 'test':
-        $league = $_POST['league'] ?: 3281; // 3281;
+        $league = $_POST['league'] ?: ($s_league ?: 3281); // 3281;
         if ($league == '00000') {
             $body = 'Enter your League ID above to get your live table!';
         } else {
+//            time_elapsed();
+            $_SESSION['league'] = $league;
             $body = get_league_picks_($league);
+//            $db = New db();
+//            $db->query("insert into transactions (page, league) values ('live', ".$league.")");
+//            time_elapsed();
         }
         $success = 1;
         $arr = array(
             'SUCCESS' => $success
             ,'BODY' => $body
+            ,'LEAGUE' => $league
         );
         break;
-    case 'team':
-        $team = $_POST['team'] ?: 81182;
-        $body = get_team($team);
+    case 'test_':
+        $league = $_POST['league'] ?: ($s_league ?: 3281); // 3281;
+        if ($league == '00000') {
+            $body = 'Enter your League ID above to get your live table!';
+        } else {
+            time_elapsed();
+            $_SESSION['league'] = $league;
+            $body = first_of_week($league);
+            time_elapsed();
+        }
         $success = 1;
         $arr = array(
             'SUCCESS' => $success
             ,'BODY' => $body
+            ,'LEAGUE' => $league
+        );
+        break;
+    case 'team':
+        $team = $_POST['team'] ?: ($s_entry ?: 81182);
+        if ($team == '00000') {
+            $body = 'Enter your Team ID above to get selections!';
+        } else {
+            $_SESSION['entry'] = $team;
+            $body = get_team($team);
+        }
+        $success = 1;
+        $arr = array(
+            'SUCCESS' => $success
+            ,'BODY' => $body
+            ,'TEAM' => $team
         );
         break;
     case 'weather':
@@ -97,6 +131,35 @@ switch ($mode) {
             'SUCCESS' => $success
             ,'BODY' => $body
         );
+        break;
+    case 'transfers':
+        $entry = $_POST['entry'] ?: 0;
+        $entry_obj = new entry();
+        $entry_obj->get_transfers($entry);
+        $success = 1;
+        $arr = array(
+            'SUCCESS' => $success
+            ,'BODY' => $entry_obj->transfers
+        );
+        break;
+    case 'justoffside':
+        $res = justoffside(433);
+        $success = 1;
+        $arr = array(
+            'SUCCESS' => $success
+            ,'JO' => $res['JO']
+            ,'LEAGUE' => $res['LEAGUE']
+        );
+        break;
+    case 'fmlfpl':
+        $res = justoffside(25763);
+        $success = 1;
+        $arr = array(
+            'SUCCESS' => $success
+            ,'JO' => $res['JO']
+            ,'LEAGUE' => $res['LEAGUE']
+        );
+        break;
 }
 
 echo (sizeof($arr) > 0 ) ? json_encode($arr) : null;
@@ -112,7 +175,7 @@ function get_team($team_id) {
     $entry = new entry();
     $entry -> get($team_id);
     $t = $entry->picks;
-    $p = db_get_players();
+    $p = db_get_players_for_my_team();
 
     $current = array();
     foreach($t as $player) {
@@ -172,29 +235,28 @@ function name($t, $i, $slot) {
     return $r;
 }
 
-function array_order()
-{
-    $args = func_get_args();
-    $data = array_shift($args);
-    foreach ($args as $n => $field) {
-        if (is_string($field)) {
-            $tmp = array();
-            foreach ($data as $key => $row)
-                $tmp[$key] = $row[$field];
-            $args[$n] = $tmp;
-        }
-    }
-    $args[] = &$data;
-    call_user_func_array('array_multisort', $args);
-    return array_pop($args);
-}
-
 function get_league_picks($league_id) {
     global $url_fpl, $url_standings, $url_standings_h2h;
-    $page = 1;
-    $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
-    $array = json_decode($json_response, true);
-    $json_standings = $array['standings']['results'];
+
+    if ($league_id != 'legends') {
+        $page = 1;
+        $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
+        $array = json_decode($json_response, true);
+        $json_standings = $array['standings']['results'];
+    } else {
+        $json_standings[1]['entry_name'] = 'Ville Ronka';
+        $json_standings[1]['id'] = '767113';
+        $json_standings[1]['entry'] = '767113';
+        $json_standings[0]['entry_name'] = 'Mark Suthern';
+        $json_standings[0]['id'] = '370';
+        $json_standings[0]['entry'] = '370';
+        $json_standings[2]['entry_name'] = 'Jay Egersdorff';
+        $json_standings[2]['id'] = '175574';
+        $json_standings[2]['entry'] = '175574';
+        $json_standings[3]['entry_name'] = 'Peter Kouwenberg';
+        $json_standings[3]['id'] = '36298';
+        $json_standings[3]['entry'] = '36298';
+    }
 
     if (count($json_standings) > 0) {
         return get_league_picks_api($json_standings);
@@ -208,139 +270,407 @@ function get_league_picks($league_id) {
             return 'Error retrieving league ID!';
         }
     }
+
 }
 
 function get_league_picks_($league_id) {
-    global $url_fpl, $url_standings, $url_standings_h2h;
-    $page = 1;
-    $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
-    $array = json_decode($json_response, true);
-    $json_standings = $array['standings']['results'];
 
-    if (count($json_standings) > 0) {
-        return get_league_picks_api_($json_standings);
+    if (TIME_TIL_LIVE != 0) {
+        return 'The FPL website is updating... coming to you live in ' . TIME_TIL_LIVE;
     } else {
-        $json_response = file_get_contents($url_fpl . $url_standings_h2h . $league_id);
+        global $url_fpl, $url_standings, $url_standings_h2h;
+        $page = 1;
+        $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
         $array = json_decode($json_response, true);
         $json_standings = $array['standings']['results'];
+        $fpl_league_update_status = $array['update_status'];
+
         if (count($json_standings) > 0) {
-            return get_league_picks_api_($json_standings);
+            return get_league_picks_api_($json_standings, $fpl_league_update_status, true);
         } else {
-            return 'Error retrieving league ID!';
+            $json_response = file_get_contents($url_fpl . $url_standings_h2h . $league_id);
+            $array = json_decode($json_response, true);
+            $json_standings = $array['standings']['results'];
+            if (count($json_standings) > 0) {
+                return get_league_picks_api_($json_standings, $fpl_league_update_status, false);
+            } else {
+                return 'Error retrieving league ID!';
+            }
         }
     }
 }
 
-function get_league_picks_api_($json_standings) {
+function first_of_week($league_id) {
+    $db = New db;
+    $has_been_checked = ($db -> select("SELECT count(1) cnt FROM league_members WHERE round = ".CURRENT_GW." AND league_id = $league_id;"))[0]['cnt'];
+    if ($has_been_checked == 0) {
+        $page = 1;
+        $json_response = file_get_contents(URL_STANDINGS . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
+        $array = json_decode($json_response, true);
+        $json_standings = $array['standings']['results'];
+        if (count($json_standings) > 0) {
+            get_start_of_week_data($json_standings);
+            return get_league_picks_api_($json_standings, false, true);
+        } else {
+            $json_response = file_get_contents(URL_STANDINGS_H2H. $league_id);
+            $array = json_decode($json_response, true);
+            $json_standings = $array['standings']['results'];
+            if (count($json_standings) > 0) {
+                return get_start_of_week_data($json_standings);
+            } else {
+                return 'Error retrieving league ID!';
+            }
+        }
+    } else {
+        error_log('routed');
+        $json_standings = $db -> select("SELECT * FROM league_members WHERE round = ".CURRENT_GW." AND league_id = $league_id;");
+        return get_league_picks_api_($json_standings, false, true);
+    }
+}
+
+function get_start_of_week_data($json_standings) {
+    $sql = "insert into league_members (round, entry, league_id, entry_name, event_total, player_name, movement, rank, last_rank, rank_sort, total) values ";
+    foreach ($json_standings as $entry) {
+        $sql .= "(".CURRENT_GW.",".$entry['entry'].",".$entry['league'].",'".str_replace("'", "''", $entry['entry_name'])."',".$entry['event_total'].",'".str_replace("'", "''", $entry['player_name'])."','"
+            .$entry['movement']."',".$entry['rank'].",".$entry['last_rank'].",".$entry['rank_sort'].",".$entry['total']."),";
+//        $entry_obj = new entry();
+//        if ($entry_obj->get($entry['entry'], true)) {
+//            $picks = $entry_obj->picks;
+//        }
+    }
+    $sql = rtrim($sql, ',');
+    $db = New db;
+    $db -> query($sql);
+    return true;
+}
+
+function get_league_picks_api_($json_standings, $fpl_league_update_status, $classic_league) {
     $i = 0;
     $db_players = db_get_players_detail();
     $fixtures = db_get_current_fixtures();
-    foreach ($json_standings as $entry) {
-        $user_points = 0;
+    foreach ($json_standings as $users => $user) {
+        $gameweek_points = 0;
         $user_bench_points = 0;
         $p_played = 0;
         $p_yet_to_play = 0;
         $p_playing = 0;
         $captain = 0;
+        $vice_captain = 0;
+        $triple_captain = 0;
+        $projected_points = 0;
+        $vice_captain_points = 0;
+
+        $captain_name = '';
+        $vice_captain_name = '';
+
+        $gk_did_not_play = 0;
+        $benched_starters = 0;
+        $use_vice_captain = 0;
+
         $a_played = array();
         $a_playing = array();
         $a_to_play = array();
         $a_bench = array();
-        $new_total = $json_standings[$i]['total'];
+        $a_starters = array();
 
         $entry_obj = new entry();
-        if ($entry_obj->get($entry['entry'])) {
-            $picks = $entry_obj->picks;
-
-            foreach ($picks as $pick) {
-                $player_obj = $db_players[$pick['element'] - 1];
-                $points = $player_obj['total_points'] * $pick['multiplier'];
-                if ($pick['multiplier'] > 1) {
-                    $captain = $pick['element'];
-                }
-                if ($pick['position'] <= 11) {
-                    $fixture_id = $player_obj['fixture'];
-                    $fixture_obj = $fixtures[$fixture_id - 1];
-                    $user_points += $points;
-                    if (!$fixture_obj['finished']) {
-                        $new_total += $points;
-                    }
-                    if ($fixture_obj['finished_provisional']) {
-                        $p_played++;
-                        if ($player_obj['id'] == $captain) {
-                            $a_played[] = '<b>'.$player_obj['web_name'] . ' (' . $points . ')</b>';
-                        } else {
-                            $a_played[] = $player_obj['web_name'] . ' (' . $points . ')';
-                        }
-                    } else if ($fixture_obj['started']) {
-                        $p_playing++;
-                        if ($player_obj['id'] == $captain) {
-                            $a_playing[] = '<b>'.$player_obj['web_name'] . ' (' . $points . ')</b>';
-                        } else {
-                            $a_playing[] = $player_obj['web_name'] . ' (' . $points . ')';
-                        }
-                    } else {
-                        $p_yet_to_play++;
-                        if ($player_obj['id'] == $captain) {
-                            $a_to_play[] = '<b>'.$player_obj['web_name'] . '</b>';
-                        } else {
-                            $a_to_play[] = $player_obj['web_name'];
-                        }
-                    }
+        if ($entry_obj->get($user['entry'])) {
+            if ($classic_league) {
+                if ($entry_obj->calc_cost) {
+                    $previous_total = $user['total'] - $user['event_total'];
+                    $live_total = $previous_total - $entry_obj->transfer_cost;
                 } else {
-                    $user_bench_points += $points;
-                    $a_bench[] = $player_obj['web_name'] . ' (' . $points . ')';
+                    $previous_total = $user['total'] - $user['event_total'] + $entry_obj->transfer_cost;
+                    $live_total = $previous_total - $entry_obj->transfer_cost;
+                }
+            } else {
+                if ($entry_obj->calc_cost) {
+                    $previous_total = $user['points_for'] - $user['points_total'];
+                    $live_total = $previous_total - $entry_obj->transfer_cost;
+                } else {
+                    $previous_total = $user['points_for'] - $user['points_total'] + $entry_obj->transfer_cost;
+                    $live_total = $previous_total - $entry_obj->transfer_cost;
                 }
             }
-            $json_standings[$i]['user_points'] = $user_points;
-            $json_standings[$i]['user_bench_points'] = $user_bench_points;
-            $json_standings[$i]['yet_to_play'] = $p_yet_to_play;
-            $json_standings[$i]['playing'] = $p_playing;
-            $json_standings[$i]['played'] = $p_played;
-            $json_standings[$i]['new_total'] = $new_total;
-            $json_standings[$i]['a_played'] = $a_played;
-            $json_standings[$i]['a_playing'] = $a_playing;
-            $json_standings[$i]['a_to_play'] = $a_to_play;
-            $json_standings[$i]['a_bench'] = $a_bench;
-            $json_standings[$i]['transfer_cost'] = $entry_obj->transfer_cost;
-            $json_standings[$i]['team_value'] = $entry_obj->team_value;
-            $json_standings[$i]['calc_cost'] = $entry_obj->calc_cost;
 
-            $i++;
+            // loop through picks for each team
+            foreach ($entry_obj->picks as $pick) {
+                // get player and fixture objects
+
+                // if player has a double gameweek
+
+                // get element id's
+//                $pick_elements = array_keys(array_column($db_players, 'id'), $pick['element']);
+//
+//                $player_match_ids = array_keys(array_column($pick_elements, 'id'), $pick['element']);
+//
+//                $pick_element = array_search($pick['element'], array_column($db_players, 'id'));
+//                $pick_elements = array_keys(array_column($db_players, 'player_match_id'), $pick['element']);
+//                error_log( print_r($pick_elements, TRUE) );
+
+                $pick_element = array_search($pick['element'], array_column($db_players, 'id'));
+//                foreach ($pick_elements as $pick_key => $pick_element) {
+                    $player_obj = $db_players[$pick_element];
+                    // $player_obj = $db_players[$pick['element'] - 1];
+
+                    $fixture = $player_obj['fixture'] - 1;
+                    // if fixture DNE (blank gw)
+                    if ($fixture == -1) {
+                        if ($pick['multiplier'] == 2) {
+                            $captain = $pick['element'];
+                            $captain_name = $player_obj['web_name'];
+                        } else if ($pick['multiplier'] == 3) {
+                            $triple_captain = $pick['element'];
+                            $captain_name = $player_obj['web_name'];
+                        } else if ($pick['is_vice_captain'] == 'true') {
+                            $vice_captain = $pick['element'];
+                            $vice_captain_name = $player_obj['web_name'];
+                        }
+                        if ($pick['position'] <= 11 || $entry_obj->chip == 'bboost') {
+                            if ($player_obj['id'] == $captain || $player_obj['id'] == $triple_captain) {
+                                $a_played[] = '<b>' . $player_obj['web_name'] . ' (B)</b>';
+                                $a_starters[] = '<b>' . $player_obj['web_name'] . ' (B)</b>';
+                            } else {
+                                $a_played[] = $player_obj['web_name'] . ' (B)';
+                                $a_starters[] = $player_obj['web_name'] . ' (B)';
+                            }
+                            if ($player_obj['element_type'] == 1) {
+                                $gk_did_not_play = 1;
+                            }
+                            $benched_starters++;
+                            $p_played++;
+                        } else {
+                            $a_bench[] = $player_obj['web_name'] . ' (B)';
+                        }
+                    } else {
+                        $fixture_obj = $fixtures[$fixture];
+
+                        if ($pick['multiplier'] == 2) {
+                            $captain = $pick['element'];
+                        } else if ($pick['multiplier'] == 3) {
+                            $triple_captain = $pick['element'];
+                        } else if ($pick['is_vice_captain'] == 'true') {
+                            $vice_captain = $pick['element'];
+                            $vice_captain_name = $player_obj['web_name'];
+                        }
+
+                        // if a starter
+                        if ($pick['position'] <= 11 || $entry_obj->chip == 'bboost') {
+                            // if leagues haven't been updated and fixture != finished
+                            if ($player_obj['element_type'] == 2) {
+                                $entry_obj->def_count++;
+                            } else if ($player_obj['element_type'] == 3) {
+                                $entry_obj->mid_count++;
+                            } else if ($player_obj['element_type'] == 4) {
+                                $entry_obj->fwd_count++;
+                            }
+
+                            if ($fpl_league_update_status == 0 and !$fixture_obj['finished']) {
+                                $points = ($player_obj['total_points'] + $player_obj['bonus']) * $pick['multiplier'];
+                                $bonus_to_display = ($player_obj['bonus'] > 0) ? (' + ' . ($player_obj['bonus'] * $pick['multiplier'])) : '';
+                                $points_to_display = ($player_obj['total_points'] * $pick['multiplier']) . $bonus_to_display;
+                                // if leagues haven't been updated and fixture == finished
+                            } else {
+                                $points = $player_obj['total_points'] * $pick['multiplier'];
+                                $points_to_display = $points;
+                            }
+
+                            // create the list of players
+                            // if fixture == finished
+                            if ($fixture_obj['finished_provisional']) {
+                                $p_played++;
+                                if ($player_obj['id'] == $captain || $player_obj['id'] == $triple_captain) {
+                                    $captain_name = $player_obj['web_name'];
+                                    if ($player_obj['minutes'] == 0) {
+                                        $a_played[] = '<b>' . $player_obj['web_name'] . ' (B)</b>';
+                                        $benched_starters++;
+                                        $use_vice_captain = 1;
+                                    } else {
+                                        $a_played[] = '<b>' . $player_obj['web_name'] . ' (' . $points_to_display . ')</b>';
+                                    }
+                                } else if ($player_obj['minutes'] == 0) {
+                                    $a_played[] = $player_obj['web_name'] . ' (B)';
+                                    if ($player_obj['element_type'] == 1) {
+                                        $gk_did_not_play = 1;
+                                    }
+                                    $benched_starters++;
+                                } else {
+                                    $a_played[] = $player_obj['web_name'] . ' (' . $points_to_display . ')';
+                                    if ($player_obj['id'] == $vice_captain) {
+                                        $vice_captain_points = $points_to_display;
+                                    }
+                                }
+                                // if fixture == started
+                            } else if ($fixture_obj['started']) {
+                                $p_playing++;
+                                if ($player_obj['id'] == $captain || $player_obj['id'] == $triple_captain) {
+                                    $captain_name = $player_obj['web_name'];
+                                    if ($player_obj['minutes'] == 0) {
+                                        $a_playing[] = '<b>' . $player_obj['web_name'] . ' (B)</b>';
+                                        $benched_starters++;
+                                        $use_vice_captain = 1;
+                                    } else {
+                                        $a_playing[] = '<b>' . $player_obj['web_name'] . ' (' . $points_to_display . ')</b>';
+                                    }
+                                } else if ($player_obj['minutes'] == 0) {
+                                    $a_playing[] = $player_obj['web_name'] . ' (B)';
+                                    if ($player_obj['element_type'] == 1) {
+                                        $gk_did_not_play = 1;
+                                    }
+                                } else {
+                                    $a_playing[] = $player_obj['web_name'] . ' (' . $points_to_display . ')';
+                                    if ($player_obj['id'] == $vice_captain) {
+                                        $vice_captain_points = $points_to_display;
+                                    }
+                                }
+                                // if fixture != started
+                            } else {
+                                $p_yet_to_play++;
+                                if ($player_obj['id'] == $captain || $player_obj['id'] == $triple_captain) {
+                                    $captain_name = $player_obj['web_name'];
+                                    if ($player_obj['id'] == $captain) {
+                                        $player_projected_points = $player_obj['form'] * 2;
+                                    } else {
+                                        $player_projected_points = $player_obj['form'] * 3;
+                                    }
+                                    $a_to_play[] = '<b>' . $player_obj['web_name'] . ' (' . $player_projected_points . ')</b>';
+                                } else {
+                                    $player_projected_points = $player_obj['form'];
+                                    $a_to_play[] = $player_obj['web_name'] . ' (' . $player_projected_points . ')</b>';
+                                }
+                                $projected_points .= $player_projected_points;
+                            }
+
+                            if ($player_obj['minutes'] == 0 and !$fixture_obj['started']) {
+                                $points_to_display = '';
+                            } else if ($player_obj['minutes'] == 0) {
+                                $points_to_display = ' (B)';
+                            } else {
+                                $points_to_display = ' (' . $points_to_display . ')';
+                            }
+
+                            if ($player_obj['id'] == $captain || $player_obj['id'] == $triple_captain) {
+                                $a_starters[] = '<b>' . $player_obj['web_name'] . $points_to_display . '</b>';
+                            } else {
+                                $a_starters[] = $player_obj['web_name'] . $points_to_display;
+                            }
+
+                            // add points to gameweek points
+                            $gameweek_points += $points;
+                        } else {
+                            if ($fpl_league_update_status == 0 and !$fixture_obj['finished']) {
+                                $points = ($player_obj['total_points'] + $player_obj['bonus']) * $pick['multiplier'];
+                                $bonus_to_display = ($player_obj['bonus'] > 0) ? (' + ' . ($player_obj['bonus'] * $pick['multiplier'])) : '';
+                                $points_to_display = ($player_obj['total_points'] * $pick['multiplier']) . $bonus_to_display;
+                            } else if ($fpl_league_update_status == 0 and $fixture_obj['finished']) {
+                                $points = $player_obj['total_points'] * $pick['multiplier'];
+                                $points_to_display = ($player_obj['total_points'] * $pick['multiplier']);
+                            } else {
+                                $points_to_display = ($player_obj['total_points'] * $pick['multiplier']);
+                                $points = $player_obj['total_points'] * $pick['multiplier'];
+                            }
+
+                            if ($gk_did_not_play == 1 and $pick['position'] == 12) {
+                                $gameweek_points += $points;
+                                $a_starters[] = '<i>' . $player_obj['web_name'] . ' (' . $points_to_display . ')</i>';
+//                        } else if ($entry_obj->def_count >= 3) {
+
+                            } else {
+                                $user_bench_points += $points;
+                                $a_bench[] = $player_obj['web_name'] . ' (' . $points_to_display . ')';
+                            }
+                        }
+                    }
+                }
+
+                if ($use_vice_captain == 1) {
+                    $gameweek_points += $vice_captain_points;
+                    $a_starters[] = '';
+                    $a_starters[] = '<i>VC: ' . $vice_captain_name . ' +' . $vice_captain_points . '</i>';
+                }
+                $json_standings[$i]['previous_total'] = $previous_total;
+                $json_standings[$i]['live_total'] = $live_total + $gameweek_points;
+                $json_standings[$i]['projected_total'] = $live_total + $gameweek_points + round($projected_points, 0);
+                $json_standings[$i]['gameweek_points'] = $gameweek_points;
+                $json_standings[$i]['user_bench_points'] = $user_bench_points;
+
+                // number of players in each status
+                $json_standings[$i]['yet_to_play'] = $p_yet_to_play;
+                $json_standings[$i]['playing'] = $p_playing;
+                $json_standings[$i]['played'] = $p_played;
+
+                // list of players in each status
+                $json_standings[$i]['a_played'] = $a_played;
+                $json_standings[$i]['a_playing'] = $a_playing;
+                $json_standings[$i]['a_to_play'] = $a_to_play;
+                $json_standings[$i]['a_bench'] = $a_bench;
+                $json_standings[$i]['a_starters'] = $a_starters;
+
+                $json_standings[$i]['transfer_cost'] = $entry_obj->transfer_cost;
+                $json_standings[$i]['team_value'] = $entry_obj->team_value;
+                $json_standings[$i]['calc_cost'] = $entry_obj->calc_cost;
+                $json_standings[$i]['entry'] = $user['entry'];
+
+                if ($triple_captain != 0) {
+                    $captain_name = $captain_name . ' (3x)';
+                }
+                $json_standings[$i]['captain_name'] = $captain_name; // . ' (' . $vice_captain_name . ')';
+                $json_standings[$i]['event_transfers'] = $entry_obj->event_transfers;
+                // $json_standings[$i]['points_so_far'] = $entry_obj->points_so_far;
+
+                $i++;
+//            }
         };
     }
-    $json_standings = array_order($json_standings, 'new_total', SORT_DESC);
+    $json_standings = array_order($json_standings, 'live_total', SORT_DESC);
     $i = 1;
     $table = '<table id="live_table" class="table table-striped table-condensed table-sm"><thead><tr>';
-    $table .= '<th></th><th colspan="3" style=""># Players</th><th colspan="3"># Points</th><th colspan="2">Totals</th></tr><tr>';
+    $table .= '<th></th><th colspan="3" style=""># Players</th><th colspan="3"># Points</th><th colspan="4">Totals</th></tr><tr>';
     $table .= th('Player');
     $table .= th('Played', 'Players that have completed their match for this gameweek.');
     $table .= th('Playing', 'Players currently in a match.');
-    $table .= th('To Play', 'Players that have yet to play this gameweek.');
+    $table .= th('To Play', 'Players that have yet to play this gameweek (Current Form).');
     $table .= th('Pts', 'Player points for this gameweek.');
     $table .= th('Bench', 'Total bench points for this gameweek.');
-    $table .= th('Cost', 'Cost of the transfers made this gameweek.');
+    // $table .= th('Cost', 'Cost of the transfers made this gameweek.');
+    $table .= th('Trans', 'Transfers made this gameweek.');
     $table .= th('Live Total', 'Live Total Points (Live Rank)');
     $table .= th('Prev Total', 'Previous Week Total Points');
     $table .= th('Team Value', 'Team Value + Money in the Bank');
+    $table .= th('Captain', 'Captain');
+    // $table .= th('Proj Total', 'Projected Total (Points from Players Played/Playing + Form from Players Yet to Play)');
 
     $table .= '</tr></thead><tbody>';
     foreach ($json_standings as $users => $user) {
+        $starters_table = '<table><tbody>';
+        foreach ($user['a_starters'] as $p_started) {
+            $starters_table .= '<tr><td>'.$p_started.'</td></tr>';
+        }
+        $starters_table .= '</tbody></table>';
+
+        $projected_table = '<table><tbody>';
+
         $played_table = '<table><tbody>';
         foreach ($user['a_played'] as $p_played) {
             $played_table .= '<tr><td>'.$p_played.'</td></tr>';
+//            $starters_table .= '<tr><td>'.$p_played.'</td></tr>';
+            $projected_table .= '<tr><td>'.$p_played.'</td></tr>';
         }
         $played_table .= '</tbody></table>';
 
         $playing_table = '<table><tbody>';
         foreach ($user['a_playing'] as $p_playing) {
             $playing_table .= '<tr><td>'.$p_playing.'</td></tr>';
+//            $starters_table .= '<tr><td>'.$p_playing.'</td></tr>';
+            $projected_table .= '<tr><td>'.$p_playing.'</td></tr>';
         }
         $playing_table .= '</tbody></table>';
 
         $to_play_table = '<table><tbody>';
         foreach ($user['a_to_play'] as $p_to_play) {
             $to_play_table .= '<tr><td>'.$p_to_play.'</td></tr>';
+//            $starters_table .= '<tr><td>'.$p_to_play.'</td></tr>';
+            $projected_table .= '<tr><td>'.$p_to_play.'</td></tr>';
         }
         $to_play_table .= '</tbody></table>';
 
@@ -350,22 +680,25 @@ function get_league_picks_api_($json_standings) {
         }
         $bench_table .= '</tbody></table>';
 
-        $table .= '<tr>';
-        $table .= td($user['entry_name']);
-        $table .= '<td data-order="'.$user['played'].'"><a class="played" title="<b>Played</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$played_table.'" >'.$user['played'].'</a></td>';
+        $projected_table .= '</tbody></table>';
+
+
+        $table .= '<tr class="entry_row" entry="'.$user['entry'].'">';
+        $table .= td('<a href="https://fantasy.premierleague.com/a/team/'.$user['entry'].'/event/'.CURRENT_GW.'" target="_blank">'.$user['entry_name'].'</a>');
+        $table .= '<td data-order="'.$user['played'].'"><a class="played" title="<b>Played</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="right" data-container="body" data-content="'.$played_table.'" >'.$user['played'].'</a></td>';
         $table .= '<td data-order="'.$user['playing'].'"><a class="playing" title="<b>Playing</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$playing_table.'" >'.$user['playing'].'</a></td>';
-        $table .= '<td data-order="'.$user['yet_to_play'].'"><a class="yet-to-play" title="<b>Yet to Play</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$to_play_table.'" >'.$user['yet_to_play'].'</a></td>';
-        $table .= td($user['user_points']);
+        $table .= '<td data-order="'.$user['yet_to_play'].'"><a class="yet-to-play" title="<b>Yet to Play (Form)</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$to_play_table.'" >'.$user['yet_to_play'].'</a></td>';
+        $table .= '<td data-order="'.$user['gameweek_points'].'"><a class="live_points" title="<b>Live Points</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$starters_table.'" >'.$user['gameweek_points'].'</a></td>';
         $table .= '<td data-order="'.$user['user_bench_points'].'"><a class="bench" title="<b>Bench Points</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$bench_table.'" >'.$user['user_bench_points'].'</a></td>';
-        $table .= td(($user['transfer_cost'] == 0) ? $user['transfer_cost'] : '-'.$user['transfer_cost']);
-        if ($user['calc_cost']) {
-            $table .= td(($user['new_total'] - $user['transfer_cost']) . ' ('.$i.')');
-            $table .= td($user['new_total'] - $user['user_points']);
-        } else {
-            $table .= td($user['new_total'] . ' ('.$i.')');
-            $table .= td($user['new_total'] - $user['user_points'] + $user['transfer_cost']);
-        }
+        $table .= '<td data-order="'.$user['event_transfers'].'"><a data-html="true" title="<b>Transfer Cost: '.$user['transfer_cost'].'</b>" data-content="Loading..." data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" id="transfers_'.$user['entry'].'" class="transfers" data-entry="'.$user['entry'].'">'.$user['event_transfers'].'</a></td>';
+
+        $table .= td_order($user['live_total'] .color_rank($user, $i), $user['live_total']);
+        $table .= td_order($user['previous_total'] . ' (' . $user['last_rank'] . ')', $user['previous_total']);
+
         $table .= td($user['team_value']);
+        $table .= td($user['captain_name']);
+        // $table .= td_order($user['projected_total'], $user['projected_total']);
+        // $table .= '<td data-order="'.$user['projected_total'].'"><a class="proj_points" title="<b>Projected Total</b>" data-html="true" data-toggle="popover" data-trigger="click" data-placement="left" data-container="body" data-content="'.$projected_table.'" >'.$user['projected_total'].'</a></td>';
         $table .= '</tr>';
         $i++;
     }
@@ -373,16 +706,7 @@ function get_league_picks_api_($json_standings) {
     return $table;
 }
 
-function th($name, $title = null) {
-    $title = $title ?: $name;
-    $h = '<th class="text-nowrap" title="'.$title.'">'.$name.'</th>';
-    return $h;
-}
 
-function td($name) {
-    $d = '<td class="text-nowrap">'.$name.'</td>';
-    return $d;
-}
 
 function get_league_picks_api($json_standings) {
     global $url_fpl;
@@ -402,7 +726,6 @@ function get_league_picks_api($json_standings) {
             $player = $pick['element'];
             $entry_arr = array('entry' => $entry_id, 'multiplier' => $pick['multiplier'], 'position' => $pick['position']);
             $pick_tracker[$player][] = $entry_arr;
-            // $pick_tracker[$player][$entry_id][] = $pick['is_captain'];
         }
     }
 
@@ -417,13 +740,14 @@ function get_league_picks_api($json_standings) {
 
         $inner_table = '<table><tbody>';
         foreach ($picks as $entry) {
-            $inner_value = $league_entry_ids[$entry['entry']]['entry_name'].' ('.$league_entry_ids[$entry['entry']]['rank'];
+            $inner_rank = ($league_entry_ids[$entry['entry']]['rank'] != null) ? ' ('.$league_entry_ids[$entry['entry']]['rank'].')' : '';
+            $inner_value = $league_entry_ids[$entry['entry']]['entry_name'].$inner_rank;
             if ($entry['multiplier'] > 1) {
                 $inner_value = '<b>'.$inner_value.'</b>';
             } elseif ($entry['position'] > 11) {
                 $inner_value = '<strike>'.$inner_value.'</strike>';
             }
-            $inner_table .= '<tr><td>'.$inner_value.')</td></tr>';
+            $inner_table .= '<tr><td>'.str_replace('"', "", $inner_value).'</td></tr>';
         }
         $inner_table .= '</tbody></table>';
 
@@ -605,26 +929,39 @@ function db_get_players() {
     return $rows;
 }
 
+function db_get_players_for_my_team() {
+    $db = New db;
+    $rows = $db -> select(
+        'select p.web_name, p.code, p.element_type, ft.gw'.(CURRENT_GW + 1).',ft.gw'.(CURRENT_GW + 2).',ft.gw'.(CURRENT_GW + 3).',ft.gw'.(CURRENT_GW + 4).'
+                from players p 
+                join teams t on p.team = t.id
+                join fixture_table ft on ft.`name` = t.name;');
+    return $rows;
+}
+
 function db_get_players_detail() {
     $db = New db;
     $rows = $db -> select(
         'SELECT
+                  pd.id player_match_id,
                   pd.element as id,
                   pd.bps,
                   pd.total_points,
                   pd.fixture,
-                  p.web_name
+                  p.web_name,
+                  pd.bonus,
+                  pd.minutes,
+                  p.element_type,
+                  p.form
                 FROM players_detail pd
                 join players p on pd.element = p.id
-                WHERE round = '.CURRENT_GW.';');
+                WHERE round = '.CURRENT_GW.' order by pd.element asc;');
     return $rows;
 }
 
 function db_get_current_fixtures() {
     $db = New db;
-    $rows = $db -> select(
-        'SELECT * FROM fixtures;');
-                // WHERE event = '.CURRENT_GW.';');
+    $rows = $db -> select('SELECT finished, finished_provisional, started FROM fixtures;');
     return $rows;
 }
 function players_table($positions) {
@@ -635,14 +972,18 @@ function players_table($positions) {
     }
     $positions_str = rtrim($positions_str, ',');
 
+    $set_min = ($_POST['set_min'] == 'true') ? ' and minutes > 850 ' : '';
+    $set_form = ($_POST['form'] == 'true') ? ' and form >= 2 ' : '';
     $query = 'select p.web_name, t.name, cast((now_cost / 10) as decimal(3,1)) now_cost, points_per_game,
       cast(((points_per_game - 2) / (now_cost / 10)) as decimal(5,3)) vapm,
+      cast((points_per_game / (now_cost / 10)) as decimal(5,2)) ppgm,
+      cast((total_points / (now_cost / 10)) as decimal(5,2)) ppm,
      goals_scored, assists, clean_sheets, bps, element_type, total_points, minutes
      ,ft.gw'.$CURRENT_GW.',ft.gw'.($CURRENT_GW+1).'
                 from players p 
                 join teams t on p.team = t.id
                 join fixture_table ft on ft.`name` = t.name
-                where element_type in ('. $positions_str .')';
+                where element_type in ('. $positions_str .')'.$set_min.$set_form.';';
     $db = New db;
     $rows = $db -> select($query);
 
@@ -657,6 +998,8 @@ function players_table($positions) {
                     <th title="Player Price">Cost</th>
                     <th title="Total FPL Points">Pts</th>
                     <th title="Points Per Game">PPG</th>
+                    <th title="Points Per Game Per Million">PPGM</th>
+                    <th title="Points Per Million">PPM</th>
                     <th title="(Points - 2) / Cost">VAPM</th>
                     <th title="Goals">G</th>
                     <th title="Assists">A</th>
@@ -678,6 +1021,8 @@ function players_table($positions) {
             $body .= '<td><p style=" min-width: 50px; height: 0px;">£ ' . $row['now_cost'] . '</p></td>';
             $body .= '<td>' . $row['total_points'] . '</td>';
             $body .= '<td>' . $row['points_per_game'] . '</td>';
+            $body .= '<td>' . $row['ppgm'] . '</td>';
+            $body .= '<td>' . $row['ppm'] . '</td>';
             $body .= '<td>' . $row['vapm'] . '</td>';
             $body .= '<td>' . $row['goals_scored'] . '</td>';
             $body .= '<td>' . $row['assists'] . '</td>';
@@ -761,4 +1106,92 @@ function get_teams_select ($team_id) {
         $options .= '<option value="'.$team['id'].'" '.$selected.' >'.$team['name'].'</option>';
     }
     return $options;
+}
+
+function justoffside($league_id = null)
+{
+    if ($league_id == 433) {
+        $page_end = 11;
+    } else {
+        $page_end = 38;
+    }
+    $i = 0;
+    $results = array();
+    $phase = $_POST['phase'];
+    if ($phase > 1) {
+        $total_to_get = 'total';
+        $header_total = 'Month Total';
+    } else {
+        $total_to_get = 'event_total';
+        $header_total = 'Week Total';
+    }
+
+    for ($page = 1; $page <= $page_end; $page++) {
+        $json_response = file_get_contents(URL_STANDINGS . $league_id . "?phase=".$phase."&le-page=1&ls-page=" . $page);
+        $array = json_decode($json_response, true);
+        $json_standings = $array['standings']['results'];
+        if (count($json_standings) > 0) {
+            foreach ($json_standings as $entry) {
+                $results[$i]['entry'] = $entry['entry'];
+                $results[$i]['entry_name'] = $entry['entry_name'];
+                $results[$i]['event_total'] = $entry[$total_to_get];
+                $results[$i]['player_name'] = $entry['player_name'];
+                $i++;
+            }
+        } else {
+            break;
+        }
+    }
+    $results = array_order($results, 'event_total', SORT_DESC);
+    $place = 0;
+    $count_tied = 0;
+    $prev_player_total = 999999999;
+
+    $jo_table = '<table id="jo_table" class="table table-striped table-condensed table-sm"><thead><tr>';
+    $table = '<table id="total_league_table" class="table table-striped table-condensed table-sm"><thead><tr>';
+    $header_table = th('Rank');
+    $header_table .= th('Team Name');
+    $header_table .= th('Player Name');
+    $header_table .= th($header_total);
+    $header_table .= '</tr></thead><tbody>';
+    $jo_table .= $header_table;
+    $table .= $header_table;
+    foreach ($results as $entry) {
+        $curr_total = $entry['event_total'];
+        if ($curr_total < $prev_player_total) {
+            $place++;
+            $place = $place + $count_tied;
+            $count_tied = 0;
+        } else {
+            $count_tied++;
+        }
+
+        $i_table = '<tr>';
+        $i_table .= td($place, 10);
+        $i_table .= td('<a href="https://fantasy.premierleague.com/a/team/' . $entry['entry'] . '/event/' . CURRENT_GW . '" >' . $entry['entry_name'] . '</a>', 40);
+        $i_table .= td($entry['player_name'], 40);
+        $i_table .= td($curr_total, 10);
+        $i_table .= '</tr>';
+
+        $table .= $i_table;
+        if ($league_id == 433) {
+            if (substr($entry['entry_name'], -15) == '@JustOffsidePod') {
+                $jo_table .= $i_table;
+            }
+        } else {
+            if (substr($entry['entry_name'], -9) == '@ FML FPL') {
+                $jo_table .= $i_table;
+            }
+        }
+
+        $prev_player_total = $curr_total;
+    }
+    $table .= '</tbody></table>';
+    $jo_table .= '</tbody></table>';
+
+    $res = array(
+        'JO' => $jo_table
+        ,'LEAGUE' => $table
+    );
+    return $res;
 }

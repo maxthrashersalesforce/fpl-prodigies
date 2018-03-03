@@ -45,6 +45,13 @@
 	color: white;
 }
 
+.btn-primary:active {
+	background-color: #00FF87;
+	background-image: none;
+	border-color: #00FF87;
+	color: black;
+}
+
 #filter {
 	border: black;
 }
@@ -121,7 +128,7 @@ label {
 
 .wrapper {
 	display: grid;
-	grid-template-columns: repeat(5, 1fr);
+	grid-template-columns: repeat(5, 5fr);
 	grid-gap: 10px;
 	grid-auto-rows: minmax(20px, auto);
 }
