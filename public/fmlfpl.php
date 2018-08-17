@@ -22,6 +22,9 @@ require_once("header.php");
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
                     <li><a href="#" class="phase" id="1">Gameweek <?php echo CURRENT_GW; ?></a></li>
+                    <li><a href="#" class="phase" id="10">April</a></li>
+                    <li><a href="#" class="phase" id="9">March</a></li>
+                    <li><a href="#" class="phase" id="8">February</a></li>
                     <li><a href="#" class="phase" id="7">January</a></li>
                     <li><a href="#" class="phase" id="6">December</a></li>
                     <li><a href="#" class="phase" id="5">November</a></li>

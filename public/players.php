@@ -5,6 +5,7 @@ require_once("header.php");
 <body>
 
 <div class="container-fluid" style="margin-top: 60px;">
+<!--    <h1>Leaving last years stats up until GW 1. Players that have moved teams' fixtures are inaccurate.</h1>-->
     <div class="row" style="padding: 0 0 5px 0;">
         <div class="col-xs-12 col-lg-6 col-md-6">
             <input id="search" class="search form-control" placeholder="Search..." style="">
@@ -26,7 +27,7 @@ require_once("header.php");
     </div>
     <div class="row">
         <div class="col-xs-12 table-responsive" id="player">
-            <table id="players" class="table table-striped table-sm"></table>
+            <table id="players" class="table table-striped table-sm"><thead></thead></table>
         </div>
     </div>
 </div>

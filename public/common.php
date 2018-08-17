@@ -4,15 +4,11 @@ $now = date("Y-m-d H:i:s"); // games start at 7:45 GMT
 // $go_live = '2018-01-01 12:10:00';
 // $down_time = '2018-01-01 11:30:00';
 
-if ($now > '2018-03-03 12:10:00') { // if ($now > '2017-12-12 12:10:00') { 12:10 is the usual saturday start time, night games are 19:45, so 19:25
-    define('CURRENT_GW', 29);
+if ($now > '2018-05-13 14:40:00') { // if ($now > '2017-12-12 12:10:00') { 12:10 is the usual saturday start time, night games are 19:45, so 19:25
+    define('CURRENT_GW', 1);
     define('TIME_TIL_LIVE', 0);
-//} else if ($now > $down_time) {
-//    define('TIME_TIL_LIVE', round(abs($go_live - $now) / 60,2));
-//    // error_log('ttl: ' .TIME_TIL_LIVE);
-//    define('CURRENT_GW', 22);
 } else {
-    define('CURRENT_GW', 28);
+    define('CURRENT_GW', 1);
     define ('TIME_TIL_LIVE', 0);
 }
 
@@ -227,7 +223,9 @@ function td_order($name, $order) {
 }
 
 function color_rank($user, $new_rank) {
-    if ($user['last_rank'] < $new_rank) {
+    if ($user['last_rank'] == null) {
+        $color = 'black';
+    } else if ($user['last_rank'] < $new_rank) {
         $color = 'red';
     } else if ($user['last_rank'] == $new_rank) {
         $color = 'black';

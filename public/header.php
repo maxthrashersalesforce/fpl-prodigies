@@ -15,8 +15,14 @@
     <meta name="theme-color" content="#ffffff">
 
     <?php
-    require_once("db/db.php");
-    require_once("data/from_db.php");
+//    echo __DIR__;
+//    if (__DIR__ == 'stat') {
+//        require_once("../db/db.php");
+//        require_once("../data/from_db.php");
+//    } else {
+        require_once("db/db.php");
+        require_once("data/from_db.php");
+//    }
     ?>
 
     <script>
@@ -25,6 +31,15 @@
 
         heap.track('Load', {test: 1});
     </script>
+
+<!--    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>-->
+<!--    <script>-->
+<!--        (adsbygoogle = window.adsbygoogle || []).push({-->
+<!--            google_ad_client: "ca-pub-9643178282579239",-->
+<!--            enable_page_level_ads: true-->
+<!--        });-->
+<!--    </script>-->
+
 </head>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container navcontainer">
@@ -41,12 +56,17 @@
             <ul class="nav navbar-nav">
 <!--                <li><input id="search" class="search form-control" placeholder="Search..." style="background: transparent; border: none; margin-top: 8px;"></li>-->
 <!--                <li><a href="./blog">Analysis</a></li>-->
+<!--                <li><a href="./live">Home</a></li>-->
+<!--                <li><a href="./selections">Help</a></li>-->
+<!--                <li><a href="https://saleseng.dev.looker.com/looks/787?toggle=det">Data</a></li>-->
+
+
                 <li><a href="./live">Live Table</a></li>
                 <li><a href="./selections">Selections</a></li>
-                <li><a href="./players">Players</a></li>
+                <li><a href="./players">Stats</a></li>
                 <li><a href="./fixtures">Fixtures</a></li>
                 <li><a href="./my">My Team</a></li>
-                <li><a href="./teamsheets">Teamsheets</a></li>
+<!--                <li><a href="./teamsheets">Teamsheets</a></li>-->
                 <li><a href="./">Help</a></li>
             </ul>
         </div>

@@ -13,7 +13,7 @@
                 <option value="1">1</option>
                 <option value="3">3</option>
                 <option selected value="5">5</option>
-                <option value="10">10</option>
+<!--                <option value="10">10</option>-->
                 <option value="<?php echo 38 - CURRENT_GW ?>"><?php echo 38 - CURRENT_GW ?></option>
             </select>
         </div>

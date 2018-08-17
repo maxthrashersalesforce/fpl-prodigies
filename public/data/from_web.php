@@ -15,15 +15,19 @@ $league_id = 3281;
 // $league_id = 2637;
 // $league_id = 6211;
 // get_league_standings($league_id, $last_played_gameweek);
-// $rows = get_winners($league_id, 1);
+//$rows = get_winners($league_id, 1);
 // echo '<table>'.$rows.'</table>';
 
-// get_players($url_players);
+//get_players($url_players);
+
 // get_teams($url_teams);
 // create($url_fixtures);
 
+// does bonus updates
 get_fixtures_($url_fixtures);
-get_players_($url_players);
+
+
+//get_players_($url_players);
 // get_players_detail($url_players_detail);
 
 
@@ -139,6 +143,7 @@ function get_teams($url) {
 
 }
 
+// old - dnu
 function get_fixtures($url) {
     $fixtures = get_fpl_response($url);
 
@@ -163,6 +168,7 @@ function get_fixtures($url) {
     echo 'results refreshed.';
 }
 
+// get / update fixtures and current bonus
 function get_fixtures_($url) {
     $fixtures = get_fpl_response($url);
     $db = New db();
@@ -172,8 +178,8 @@ function get_fixtures_($url) {
     $db->query($sql);
 
     foreach ($fixtures as $fixture) {
-        if ($fixture['event'] == CURRENT_GW) {
-            $insert = 'insert into fixtures (';
+        if ($fixture['event'] >= CURRENT_GW) {
+            $insert = 'insert into fpl.fixtures (';
             foreach ($fixture as $key => $value) {
                 if ($key != 'stats') {
                     $insert .= $key . ',';
@@ -197,7 +203,9 @@ function get_fixtures_($url) {
             if ($r != 1) {
                 error_log($r);
                 error_log($insert);
+                echo('err: '. $r);
             } else {
+//                echo($insert.'<br>');
                 $i++;
             };
 
@@ -215,22 +223,22 @@ function get_fixtures_($url) {
                 $bonus = array_order($bonus, 'value', SORT_DESC);
 
                 if ($bonus[0]['value'] > $bonus[1]['value']) {
-                    bonus($db, $bonus[0]['element'], 3);
+                    bonus($db, $bonus[0]['element'], 3, $fixture['id']);
                     if ($bonus[1]['value'] > $bonus[2]['value']) {
-                        bonus($db, $bonus[1]['element'], 2);
-                        bonus($db, $bonus[2]['element'], 1);
+                        bonus($db, $bonus[1]['element'], 2, $fixture['id']);
+                        bonus($db, $bonus[2]['element'], 1, $fixture['id']);
                     } else {
-                        bonus($db, $bonus[1]['element'], 2);
-                        bonus($db, $bonus[2]['element'], 2);
+                        bonus($db, $bonus[1]['element'], 2, $fixture['id']);
+                        bonus($db, $bonus[2]['element'], 2, $fixture['id']);
                     }
                 } else {
-                    bonus($db, $bonus[0]['element'], 3);
-                    bonus($db, $bonus[1]['element'], 3);
+                    bonus($db, $bonus[0]['element'], 3, $fixture['id']);
+                    bonus($db, $bonus[1]['element'], 3, $fixture['id']);
                     if ($bonus[2]['value'] > $bonus[3]['value']) {
-                        bonus($db, $bonus[2]['element'], 1);
+                        bonus($db, $bonus[2]['element'], 1, $fixture['id']);
                     } else {
-                        bonus($db, $bonus[2]['element'], 1);
-                        bonus($db, $bonus[3]['element'], 1);
+                        bonus($db, $bonus[2]['element'], 1, $fixture['id']);
+                        bonus($db, $bonus[3]['element'], 1, $fixture['id']);
                     }
                 }
             }
@@ -239,8 +247,8 @@ function get_fixtures_($url) {
     echo $i . ' fixtures refreshed.';
 }
 
-function bonus($db, $element, $bonus) {
-    $sql = 'update players_detail set bonus = '.$bonus.' where round = '.CURRENT_GW.' and element = '.$element.';';
+function bonus($db, $element, $bonus, $fixture) {
+    $sql = 'update fpl.players_detail set bonus = '.$bonus.' where round = '.CURRENT_GW.' and element = '.$element.' and fixture = '.$fixture.';';
     $db->query($sql);
 }
 //
@@ -270,7 +278,7 @@ function get_players($url) {
 
     foreach ($players as $player) {
         $query = $db -> query(
-            'insert into players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
+            'insert into fpl.players (id, web_name, team, goals_scored, assists, clean_sheets, goals_conceded, bps, now_cost, element_type, total_points,
               code, minutes, points_per_game, event_points, selected_by_percent) values ('
             . $player['id']
             . ',"' . $player['web_name']
@@ -301,7 +309,7 @@ function get_players_($url) {
     $db = New db();
 
     foreach ($players as $player) {
-        $insert = 'insert into players (';
+        $insert = 'insert into fpl.players (';
         foreach ($player as $key => $value) {
             $insert .= $key.',';
         }
@@ -374,54 +382,7 @@ function get_entries($url, $player_id, $gameweek) {
     echo $sql . '<br>';
 }
 
-function get_winners($league_id, $page) {
-    global $url_fpl, $url_standings, $last_played_gameweek;
-    $body = '';
 
-    $json_response = file_get_contents($url_fpl . $url_standings . $league_id . "?phase=1&le-page=1&ls-page=" . $page);
-    $array = json_decode($json_response, true);
-    $json_standings = $array['standings']['results'];
-
-    if ($json_standings == false) {
-        return null;
-    } else {
-
-        for ($gameweek = 1; $gameweek <= $last_played_gameweek; ++$gameweek) {
-            $week_winner_name = '';
-            $week_winner_pts = 0;
-            $week_winner_total = 0;
-            $num_of_winners = 1;
-
-            foreach ($json_standings as $entry) {
-                $resp = file_get_contents($url_fpl . "entry/" . $entry['entry'] . "/event/" . $gameweek . "/picks");
-                $arr = json_decode($resp, true);
-                $map_user_name[$entry['entry']] = $entry['entry_name'];
-
-                $all_entries = $arr['entry_history'];
-                $pts = $all_entries['points'];
-                // echo('points: ' . $pts);
-                $u_name = $map_user_name[$entry['entry']];
-                // echo $pts . ' > ' . $week_winner_pts . '<br>';
-                if (($pts > $week_winner_pts) && ($u_name != "Mid Table or Bust")) {
-                    $week_winner_pts = $pts;
-                    $week_winner_name = '<td>' . $u_name . '</td>';
-                } 
-                else if (($pts == $week_winner_pts) && ($u_name != "Mid Table or Bust")) {
-                    $week_winner_pts = $pts;
-                    $week_winner_name = '<td>' . $u_name . '</td>' . $week_winner_name;
-                    $num_of_winners++;
-                }
-            }
-            $body .= '<tr>';
-            $body .= '<td>' . $gameweek . '</td>';
-            $body .= '<td>' . $week_winner_pts . '</td>';
-            $body .= $week_winner_name;
-            // $body .= '<td>' . $week_winner_name . '</td>';
-            $body .= '</tr>';
-        }
-    }
-    return $body;
-}
 
 function my_team ($player_id) {
     $table = '';

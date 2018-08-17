@@ -30,7 +30,7 @@ function get_players_detail($url) {
 //                               ) f ON p.team = f.team_code;');
 
 //    foreach ($players_playing as $k => $v) {
-    for ($i = 1; $i <= 585; $i++) { // 560
+    for ($i = 1; $i <=519; $i++) { // 560
 //        $full_players = get_fpl_response($url.$v['id']);
 
 //        if ($player_playing['id'] == 388) {
@@ -38,76 +38,85 @@ function get_players_detail($url) {
 //        }
         $full_players = get_fpl_response($url.$i);
         $count = count($full_players['history']);
-        $match = $full_players['history'][$count - 1];
+        if ($count > 0) {
+            $match = $full_players['history'][$count - 1];
 
-        if ($match['round'] != CURRENT_GW) {
-            $insert = 'insert into players_detail (id, round, element, minutes, bps, total_points, fixture, bonus) values ('.$i.CURRENT_GW.'000,'.CURRENT_GW.','.$i.', 0,0,0,0,0) ON DUPLICATE KEY UPDATE element='.$i.';';
+            if ($match['round'] != CURRENT_GW) {
+                $insert = 'insert into players_detail (id, round, element, minutes, bps, total_points, fixture, bonus) values (' . $i . CURRENT_GW . '000,' . CURRENT_GW . ',' . $i . ', 0,0,0,0,0) ON DUPLICATE KEY UPDATE element=' . $i . ';';
             } else {
 
-            $insert = 'insert into players_detail (';
-            foreach ($match as $key => $value) {
-                if ($key != 'bonus') {
-                    $insert .= $key . ',';
+                $insert = 'insert into players_detail (';
+                foreach ($match as $key => $value) {
+                    if ($key != 'bonus') {
+                        $insert .= $key . ',';
+                    }
                 }
-            }
-            $insert = rtrim($insert, ',');
-            $insert .= ') values (';
-            $update = 'ON DUPLICATE KEY UPDATE ';
-            foreach ($match as $key => $value) {
-                if ($key != 'bonus') {
-                    $value = ($value == '') ? 0 : $value;
-                    $insert .= "'" . $value . "',";
-                    $update .= $key . '=' . "'" . $value . "',";
+                $insert = rtrim($insert, ',');
+                $insert .= ') values (';
+                $update = 'ON DUPLICATE KEY UPDATE ';
+                foreach ($match as $key => $value) {
+                    if ($key != 'bonus') {
+                        $value = ($value == '') ? 0 : $value;
+                        $insert .= "'" . $value . "',";
+                        $update .= $key . '=' . "'" . $value . "',";
+                    }
                 }
+                $insert = rtrim($insert, ',');
+                $update = rtrim($update, ',');
+                $insert .= ') ' . $update . '; ';
             }
-            $insert = rtrim($insert, ',');
-            $update = rtrim($update, ',');
-            $insert .= ') ' . $update . '; ';
-        }
-        $r = $db->query($insert);
-        if ($r != 1) {
-            error_log($r);
-            error_log($insert);
-        } else {
-            $j++;
-        };
+            $r = $db->query($insert);
 
-        $count = count($full_players['history']);
-        $match = $full_players['history'][$count - 2];
+            if ($r != 1) {
+                error_log($r);
+                error_log($insert);
+            } else {
+                $j++;
+            };
 
-        if ($match['round'] == CURRENT_GW) {
-            $insert = 'insert into players_detail (';
-            foreach ($match as $key => $value) {
-                if ($key != 'bonus') {
-                    $insert .= $key . ',';
-                }
+            $count = count($full_players['history']);
+            if (CURRENT_GW < 2) {
+                $match = $full_players['history'][$count - 1];
+            } else {
+                $match = $full_players['history'][$count - 2];
             }
-            $insert = rtrim($insert, ',');
-            $insert .= ') values (';
-            $update = 'ON DUPLICATE KEY UPDATE ';
-            foreach ($match as $key => $value) {
-                if ($key != 'bonus') {
-                    $value = ($value == '') ? 0 : $value;
-                    $insert .= "'" . $value . "',";
-                    $update .= $key . '=' . "'" . $value . "',";
+
+            if ($match['round'] == CURRENT_GW) {
+                $insert = 'insert into players_detail (';
+                foreach ($match as $key => $value) {
+                    if ($key != 'bonus') {
+                        $insert .= $key . ',';
+                    }
                 }
+                $insert = rtrim($insert, ',');
+                $insert .= ') values (';
+                $update = 'ON DUPLICATE KEY UPDATE ';
+                foreach ($match as $key => $value) {
+                    if ($key != 'bonus') {
+                        $value = ($value == '') ? 0 : $value;
+                        $insert .= "'" . $value . "',";
+                        $update .= $key . '=' . "'" . $value . "',";
+                    }
+                }
+                $insert = rtrim($insert, ',');
+                $update = rtrim($update, ',');
+                $insert .= ') ' . $update . '; ';
             }
-            $insert = rtrim($insert, ',');
-            $update = rtrim($update, ',');
-            $insert .= ') ' . $update . '; ';
+            $r = $db->query($insert);
+            if ($r != 1) {
+                error_log($r);
+                error_log($insert);
+            } else {
+                $j++;
+            };
         }
-        $r = $db->query($insert);
-        if ($r != 1) {
-            error_log($r);
-            error_log($insert);
-        } else {
-            $j++;
-        };
+
     }
     echo ($j .' refreshed player detail');
     $db->close();
 }
 
+// not in use
 function get_players_detail_()
 {
     $full_players = get_fpl_response(URL_PLAYERS_DETAIL . '1');

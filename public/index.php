@@ -6,6 +6,7 @@ require_once("header.php");
 <div class="container-fluid" style="margin-top: 50px;">
     <div class="row">
         <div class="col-xs-12">
+            <h1>FNTSY PL will be back for 18-19 season! Hang tight.</h1>
         <h3>Using FNTSY PL</h3>
         <p>FNTSY PL currently contains six different tools.</p>
         <ul>
@@ -16,18 +17,18 @@ require_once("header.php");
             </ul>
             <li><b>Selections:</b> Input your Mini-League ID to get a list of selected players for your league. League ID can be found in the URL of the League page on FPL. Compare your league ownership to overall ownership. Only the top 50 teams in the League are considered.</li>
             <ul><li>Bookmark this page with your League ID<br><a href="http://fntsypl.com/selections?league=00000" target="_blank">http://fntsypl.com/selections?league=00000</a></li><li>Defaults to the top 50 Overall FPL players.</li></ul>
-            <li><b>Players:</b> A comprehensive list of statistics at the individual player level. These statistics come from the FPL API except for VAPM which is calculated here. The next two fixtures for each player are also displayed and formatted based on difficulty (according to FPL).</li>
+            <li><b>Stats:</b> A comprehensive list of statistics at the individual player level. These statistics come from the FPL API except for VAPM which is calculated here. The next two fixtures for each player are also displayed and formatted based on difficulty (according to FPL).</li>
             <li><b>Fixtures:</b> An outline of upcoming fixtures based on difficulty. The formatting is sourced by the underlying numbers used by FPL. Home and Away form is taken into consideration. The Overall number is an equally weighted average among the number of fixtures selected in the Gameweeks dropdown.</li>
-            <li><b>My Team (BETA):</b> A team planner for the next four gameweeks. Click players to turn their background green in order to plan a starting lineup. Click again to turn red to plan a transfer. Click a third time to reset. Future plans included incorporating budget and transfers.</li>
+            <li><b>My Team (BETA - will return with start of the season):</b> A team planner for the next four gameweeks. Click players to turn their background green in order to plan a starting lineup. Click again to turn red to plan a transfer. Click a third time to reset. Future plans included incorporating budget and transfers.</li>
             <ul><li>Bookmark this page with your Team ID!<br><a href="http://fntsypl.com/my?team=00000" target="_blank">http://fntsypl.com/my?team=00000</a></li></ul>
-            <li><b>Teamsheets (BETA):</b> Projected teamsheets for each team, along with PPG. Disclaimer: this is not always completely up to date and is a work in progress for formatting.</li>
+<!--            <li><b>Teamsheets (BETA):</b> Projected teamsheets for each team, along with PPG. Disclaimer: this is not always completely up to date and is a work in progress for formatting.</li>-->
         </ul>
         </div>
     </div>
     <div class="row">
         <div class="col-xs-12">
             <h3>Feedback / Requests</h3>
-            <p>Submit feed back below or get in touch with us on Twitter <a href="https://twitter.com/FNTSYPL">@FNTSYPL</a>.</p>
+            <p>Submit feed back below or get in touch with us on Twitter <a href="https://twitter.com/FNTSYPL">@FNTSYPL</a>. Thanks to all those that contributed in the change log below! </p>
             <textarea class="form-control" id="feedback" rows="3"></textarea>
             <br>
             <input id="btn_feedback" type="button" class="btn btn-primary" value="Submit">
@@ -37,6 +38,7 @@ require_once("header.php");
         <div class="col-xs-12">
             <h3>Change Log</h3>
             <ul>
+                <li><b>MAR.03.2018</b> : Live Substitutions are now factored into the Live League Totals! Players that have been moved from the bench are in italics. This is in Beta and feedback is appreciated for bugs.</li>
                 <li><b>DEC.25.2017</b> : Bench Boost is now included in live total. Bug found by <a href="http://fmlfpl.com/" target="_blank">FML FPL</a>!</li>
                 <li><b>DEC.23.2017</b> : Live Totals cleaned up. Bug found by <a href="https://www.reddit.com/user/Trustme_I_lie" target="_blank">/u/Trustme_I_lie</a> and <a href="https://www.reddit.com/user/Oggiva" target="_blank">/u/Oggiva</a>!</li>
                 <li><b>DEC.12.2017</b> : Changed Transfer Cost to show # of Transfers instead. Request by Uncle Brian!</li>

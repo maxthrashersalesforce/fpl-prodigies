@@ -3,6 +3,7 @@ require_once("header.php");
 ?>
 <body>
 <div class="container-fluid" style="margin-top: 60px;">
+<!--    <h1>FPL site is still generating teams... Hang tight.</h1>-->
     <div class="row">
         <div class="col-xs-5">
             <input id="search" class="search form-control" placeholder="Search...">
@@ -14,6 +15,8 @@ require_once("header.php");
         </div>
         <div class="col-xs-3">
             <input id="get_livetable" type="button" class="btn btn-primary" value="Get">
+            <input style="margin-left: 10px"  id="pages" type="checkbox" class="position-checkbox" name="pages-checkbox" />
+            <label for="pages">Top 100</label>
         </div>
 <!--        <div class="col-xs-2">-->
 <!--            <div class="dropdown">-->
@@ -27,17 +30,21 @@ require_once("header.php");
 <!--                    <li><a href="#" class="quick_league" id="433">Just Offside</a></li>-->
 <!--                </ul>-->
 <!--            </div>-->
-<!--        </div>-->
+
+        <!--        </div>-->
     </div>
     <div class="row"></p></div>
 
     <div class="col-xs-12 table-responsive" id="div_live_table" ></div>
-<!--    <div class="col-xs-12">Sorry folks - busy week for me and not going to be able to get the first matches for WHU and TOT sorted. Everything should be back smooth for next week, cheers.</div>-->
+<!--    <div class="col-xs-12">See you next season! -<a href="https://twitter.com/fntsypl">@FNTSYPL</a></div>-->
 </div>
 <script>
+    var refresh;
+
     $(document).ready(function() {
         var league_id = gup('league', window.location.href);
         get_live_table(league_id);
+        // refresh = setInterval(function(){ get_live_table(league_id, true); }, 60000);
     });
 
     $('#get_livetable').click(function() {
@@ -54,6 +61,15 @@ require_once("header.php");
         get_live_table(quick_league);
         $('#dropdown_button').html($(this).text() + " <span class=\"caret\"></span>");
     });
+
+    // $('#autorefresh').change(function() {
+    //     var autorefresh = $('#autorefresh').is(':checked');
+    //     if (!autorefresh) {
+    //         clearTimeout(refresh);
+    //     } else {
+    //         refresh = setInterval(function(){ get_live_table(league_id, true); }, 60000);
+    //     }
+    // });
 
 //    $(document).on('click', '.transfers', function(e) {
 //        var obj = $(this);
@@ -78,11 +94,17 @@ require_once("header.php");
 //
 //    });
 
-    function get_live_table(league_id) {
-        var data = {league: league_id, mode: 'test'};
+    function get_live_table(league_id) { // }, auto = false) {
+        $("input:checkbox[name=pages-checkbox]:checked").each(function(){
+            positions.push($(this).attr('id'));
+        });
+
+        var data = {league: league_id, mode: 'test', pages: 2};
         var div = $('#div_live_table');
         $('.popover').hide();
-        div.html('<center><b>Loading your live table... looks like you are still in last place.</b><br><br><img src="i/roll.gif" alt="ball"></center>');
+        // if (!auto) {
+            div.html('<center><b>Loading your live table... looks like you are still in last place.</b><br><br><img src="i/roll.gif" alt="ball"></center>');
+        // }
 
         $.post('data/from_db.php', data, function(resp) {
             var j = JSON.parse(resp);
